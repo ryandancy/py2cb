@@ -166,10 +166,10 @@ def parse_node(node: ast.AST, contr: Contraption, x, y, z) -> Contraption:
 def parse(ast_root: ast.AST) -> Contraption:
     res = Contraption()
     x = y = z = 0
-    res.add_block((x, y, z), CommandBlock('scoreboard objectives add py2cb_const dummy Py2CB Constants',
+    res.add_block((x, y, z), CommandBlock('scoreboard objectives add py2cb_intrnl dummy Py2CB Internal Variables',
                                           CommandBlock.IMPULSE, auto=False))
     x += 1
-    res.add_block((x, y, z), CommandBlock('scoreboard objectives add py2cb_var dummy Py2CB Variables',
+    res.add_block((x, y, z), CommandBlock('scoreboard objectives add py2cb_var dummy Py2CB Application Variables',
                                           CommandBlock.CHAIN))
     
     return parse_node(ast_root, res, x, y, z)

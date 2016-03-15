@@ -129,7 +129,7 @@ class IDContainer:
 stringids = IDContainer()
 
 
-def parse_node(node: ast.AST, contr: Contraption, x, y, z) -> Contraption:
+def parse_node(node: ast.AST, contr: Contraption, x, y, z) -> Tuple[Contraption, int, int, int]:
     # ASSIGNMENTS
     if isinstance(node, ast.Assign):
         for target in node.targets:
@@ -165,9 +165,10 @@ def parse_node(node: ast.AST, contr: Contraption, x, y, z) -> Contraption:
                     contr.add_block((x, y, z), CommandBlock(
                         'scoreboard players set {0} py2cb_var {1}'
                         .format(target.id, int(node.value.value)), CommandBlock.CHAIN))
+    return contr, x, y, z
 
 
-def parse(ast_root: ast.AST) -> Contraption:
+def parse(ast_root: ast.Module) -> Contraption:
     res = Contraption()
     x = y = z = 0
     res.add_block((x, y, z), CommandBlock('scoreboard objectives add py2cb_intrnl dummy Py2CB Internal Variables',
@@ -176,7 +177,9 @@ def parse(ast_root: ast.AST) -> Contraption:
     res.add_block((x, y, z), CommandBlock('scoreboard objectives add py2cb_var dummy Py2CB Application Variables',
                                           CommandBlock.CHAIN))
     
-    return parse_node(ast_root, res, x, y, z)
+    for statement in ast_root.body:
+        res, x, y, z = parse_node(statement, res, x, y, z)
+    return res
 
 
 def get_ast(code: str, filename: str) -> ast.AST:

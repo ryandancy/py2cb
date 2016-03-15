@@ -171,7 +171,8 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     contr, x, y, z = parse_node(node.value, contr, x, y, z)
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(
-                        'scoreboard players operation {0} py2cb_var = expr py2cb_intrnl', CommandBlock.CHAIN))
+                        'scoreboard players operation {0} py2cb_var = expr py2cb_intrnl'
+                        .format(target.id), CommandBlock.CHAIN))
     
     return contr, x, y, z
 

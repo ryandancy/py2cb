@@ -126,6 +126,10 @@ class IDContainer:
         # Silently ignores adding multiple times
         if var not in cls._vars_to_ids:
             cls._vars_to_ids[var] = cls._next_id()
+    
+    @classmethod
+    def get_id(cls, var: str) -> int:
+        return cls._vars_to_ids[var]
 
 
 def parse_node(node: ast.AST, contr: Contraption, x, y, z) -> Contraption:

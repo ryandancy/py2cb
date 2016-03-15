@@ -3,6 +3,8 @@
 
 import argparse
 import ast
+
+from pynbt import NBTFile, TAG_Byte_Array, TAG_Compound, TAG_List, TAG_Short, TAG_String
 from typing import Tuple, List
 
 
@@ -62,6 +64,38 @@ class Contraption:
         for xyz, cblock in self.cblocks:
             res.append(list(xyz) + cblock.get_dump())
         return res
+    
+    def get_schematic(self) -> NBTFile:
+        """Exports this contraption to a schematic NBT file."""
+        # Uses unofficial .schematic format found at the Minecraft Wiki (minecraft.gamepedia.com/Schematic_file_format)
+        nbt = NBTFile(name='')
+        
+        width = max(x for (x, y, z), cblock in self.cblocks) + 1
+        height = max(y for (x, y, z), cblock in self.cblocks) + 1
+        length = max(z for (x, y, z), cblock in self.cblocks) + 1
+        
+        # blocks and data are sorted by height/y, then length/z, then width/x (YZX)
+        # therefore the index of x, y, z in blocks/data is (y * length + z) * width + x
+        blocks = data = [0] * (width * length * height)  # 0 is air
+        for (x, y, z), cblock in self.cblocks:
+            index = (y * length + z) * width + x
+            blocks[index] = {  # TODO move this logic to CommandBlock
+                CommandBlock.IMPULSE: 137,
+                CommandBlock.CHAIN: 211,
+                CommandBlock.REPEAT: 210
+            }[cblock.type_]
+            data[index] = cblock.metadata
+        
+        nbt['Width'] = TAG_Short(width)
+        nbt['Height'] = TAG_Short(height)
+        nbt['Length'] = TAG_Short(length)
+        nbt['Materials'] = TAG_String('Alpha')
+        nbt['Entities'] = TAG_List(TAG_Compound, [])
+        nbt['TileEntities'] = TAG_List(TAG_Compound, [])
+        nbt['Blocks'] = TAG_Byte_Array(blocks)
+        nbt['Data'] = TAG_Byte_Array(data)
+        
+        return nbt
 
 
 def get_ast(code: str, filename: str) -> ast.AST:

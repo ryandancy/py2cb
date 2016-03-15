@@ -24,7 +24,7 @@ class CommandBlock:
     
     CONDITIONAL = 8
     
-    def __init__(self, command: str, type_: int = IMPULSE, metadata: int = EAST, auto: bool = True) -> None:
+    def __init__(self, command: str, type_: int, metadata: int = EAST, auto: bool = True) -> None:
         self.command = command
         self.type_ = type_
         self.metadata = metadata

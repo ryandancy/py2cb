@@ -127,6 +127,7 @@ class IDContainer:
 
 
 stringids = IDContainer()
+exprids = IDContainer()
 
 
 consts = []
@@ -183,8 +184,8 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     contr, x, y, z = parse_node(node.value, contr, x, y, z)
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(
-                        'scoreboard players operation {0} py2cb_var = expr py2cb_intrnl'
-                        .format(target.id), CommandBlock.CHAIN))
+                        'scoreboard players operation {0} py2cb_var = expr_{1} py2cb_intrnl'
+                        .format(target.id, exprids.get_id(node.value)), CommandBlock.CHAIN))
     
     # BINOPS
     elif isinstance(node, ast.BinOp):
@@ -193,6 +194,30 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
             for side in [node.left, node.right]:
                 if isinstance(side, ast.Num):
                     contr, x, y, z = add_const(side.n, contr, x, y, z)
+            
+            # <= is issubset operator on sets
+            if set(map(type, [node.left, node.right])) <= {ast.Num, ast.Name}:
+                x += 1
+                exprids.add(node)
+                contr.add_block((x, y, z), CommandBlock(
+                    'scoreboard players operation expr_{0} py2cb_intrnl = {1}'.format(
+                        exprids.get_id(node),
+                        'const_{0} py2cb_intrnl'.format(node.left.n)
+                        if isinstance(node.left, ast.Num) else
+                        '{0} py2cb_var'.format(node.left.id)
+                    ),
+                    CommandBlock.CHAIN
+                ))
+                x += 1
+                contr.add_block((x, y, z), CommandBlock(
+                    'scoreboard players operation expr_{0} py2cb_intrnl += {1}'.format(
+                        exprids.get_id(node),
+                        'const_{0} py2cb_intrnl'.format(node.right.n)
+                        if isinstance(node.right, ast.Num) else
+                        '{0} py2cb_var'.format(node.right.id)
+                    ),
+                    CommandBlock.CHAIN
+                ))
     
     return contr, x, y, z
 

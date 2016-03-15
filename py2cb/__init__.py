@@ -5,7 +5,7 @@ import argparse
 import ast
 
 from pynbt import NBTFile, TAG_Byte_Array, TAG_Compound, TAG_List, TAG_Short, TAG_String
-from typing import Tuple, List
+from typing import Tuple, List, Any
 
 
 __author__ = 'Copper'
@@ -117,12 +117,12 @@ class IDContainer:
                 raise Exception('IDContainer ran out of IDs!')
         return self._id_counter
     
-    def add(self, var: str) -> None:
+    def add(self, var: Any) -> None:
         # Silently ignores adding multiple times
         if var not in self._vars_to_ids:
             self._vars_to_ids[var] = self._next_id()
     
-    def get_id(self, var: str) -> int:
+    def get_id(self, var: Any) -> int:
         return self._vars_to_ids[var]
 
 

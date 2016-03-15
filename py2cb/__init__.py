@@ -3,7 +3,7 @@
 
 import argparse
 import ast
-from typing import Tuple
+from typing import Tuple, List
 
 
 __author__ = 'Copper'
@@ -41,6 +41,10 @@ class CommandBlock:
         return 'setblock ~{0} ~{1} ~{2} minecraft:{3} {4} replace {{"Command":"{5}","auto":{6}b}}'.format(
             offx, offy, offz, self._get_command_block_name(), self.metadata, self.command, int(self.auto)
         )
+    
+    def get_dump(self) -> List[str]:
+        """Generates a list of Type, Metadata, Auto, Commmand. Mostly exists for Contraption.get_dump."""
+        return [self._get_command_block_name(), self.metadata, self.auto, self.command]
 
 
 class Contraption:
@@ -50,6 +54,14 @@ class Contraption:
     
     def add_block(self, xyz: Tuple[int, int, int], block: CommandBlock) -> None:
         self.cblocks.append((xyz, block))
+    
+    def get_dump(self) -> List[List[str]]:
+        """Generates a table of command block X, Y, Z, Type, Metadata, Auto, Command."""
+        header = ['X', 'Y', 'Z', 'Type', 'Metadata', 'Auto', 'Command']
+        res = [header]
+        for xyz, cblock in self.cblocks:
+            res.append(list(xyz) + cblock.get_dump())
+        return res
 
 
 def get_ast(code: str, filename: str) -> ast.AST:

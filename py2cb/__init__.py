@@ -143,6 +143,7 @@ def parse_node(node: ast.AST, contr: Contraption, x, y, z) -> Contraption:
                     x += 1
                     contr.add_block((x, y, z), CommandBlock('scoreboard players set {0} py2cb_var {1}'
                                                             .format(target.id, node.value.n), CommandBlock.CHAIN))
+                
                 # Simple assignment - name = str (ex: n = 'foo')
                 elif isinstance(node.value, ast.Str):
                     # Strings are represented by armor stands with custom names
@@ -150,6 +151,16 @@ def parse_node(node: ast.AST, contr: Contraption, x, y, z) -> Contraption:
                     contr.add_block((x, y, z), CommandBlock(
                         'summon ArmorStand ~ ~1 ~ {{"NoGravity":1b,"CustomName":{0},"Tags":["string_noname"]}}'
                         .format(node.value.s), CommandBlock.CHAIN))
+                    
+                    x += 1
+                    IDContainer.add(target.id)
+                    contr.add_block((x, y, z), CommandBlock(
+                        'scoreboard players set @e[type=ArmorStand,tag=string_noname] py2cb_var {0}'
+                        .format(IDContainer.get_id(target.id)), CommandBlock.CHAIN))
+                    
+                    x += 1
+                    contr.add_block((x, y, z), CommandBlock(
+                        'entitydata @e[type=ArmorStand,tag=string_noname] {"Tags":["string"]}', CommandBlock.CHAIN))
 
 
 def parse(ast_root: ast.AST) -> Contraption:

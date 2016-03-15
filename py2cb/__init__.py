@@ -124,6 +124,9 @@ class IDContainer:
     
     def get_id(self, var: Any) -> int:
         return self._vars_to_ids[var]
+    
+    def has_var(self, var: Any) -> bool:
+        return var in self._vars_to_ids
 
 
 stringids = IDContainer()

@@ -129,7 +129,7 @@ class IDContainer:
 stringids = IDContainer()
 
 
-def parse_node(node: ast.AST, contr: Contraption, x, y, z) -> Tuple[Contraption, int, int, int]:
+def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tuple[Contraption, int, int, int]:
     # ASSIGNMENTS
     if isinstance(node, ast.Assign):
         for target in node.targets:

@@ -41,6 +41,15 @@ class CommandBlock:
         )
 
 
+class Contraption:
+    
+    def __init__(self):
+        self.cblocks = []  # self.cblocks is a list of ((x, y, z), CommandBlock)
+    
+    def add_block(self, xyz, block):
+        self.cblocks.append((xyz, block))
+
+
 def get_ast(code, filename):
     return ast.parse(code, filename=filename)
 

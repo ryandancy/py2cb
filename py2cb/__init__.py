@@ -106,30 +106,27 @@ class IDContainer:
     _vars_to_ids = {}
     _id_counter = 0
     
-    def __init__(self):
-        raise Exception('IDContainer cannot be instantiated.')
-    
-    @classmethod
-    def _next_id(cls) -> int:
-        if cls._id_counter >= 0:
-            cls._id_counter += 1
-            if cls._id_counter == 2 ** 31:
-                cls._id_counter = -1
+    def _next_id(self) -> int:
+        if self._id_counter >= 0:
+            self._id_counter += 1
+            if self._id_counter == 2 ** 31:
+                self._id_counter = -1
         else:
-            cls._id_counter -= 1
-            if cls._id_counter < -(2 ** 31):
+            self._id_counter -= 1
+            if self._id_counter < -(2 ** 31):
                 raise Exception('IDContainer ran out of IDs!')
-        return cls._id_counter
+        return self._id_counter
     
-    @classmethod
-    def add(cls, var: str) -> None:
+    def add(self, var: str) -> None:
         # Silently ignores adding multiple times
-        if var not in cls._vars_to_ids:
-            cls._vars_to_ids[var] = cls._next_id()
+        if var not in self._vars_to_ids:
+            self._vars_to_ids[var] = self._next_id()
     
-    @classmethod
-    def get_id(cls, var: str) -> int:
-        return cls._vars_to_ids[var]
+    def get_id(self, var: str) -> int:
+        return self._vars_to_ids[var]
+
+
+stringids = IDContainer()
 
 
 def parse_node(node: ast.AST, contr: Contraption, x, y, z) -> Contraption:
@@ -153,10 +150,10 @@ def parse_node(node: ast.AST, contr: Contraption, x, y, z) -> Contraption:
                         .format(node.value.s), CommandBlock.CHAIN))
                     
                     x += 1
-                    IDContainer.add(target.id)
+                    stringids.add(target.id)
                     contr.add_block((x, y, z), CommandBlock(
                         'scoreboard players set @e[type=ArmorStand,tag=string_noname] py2cb_var {0}'
-                        .format(IDContainer.get_id(target.id)), CommandBlock.CHAIN))
+                        .format(stringids.get_id(target.id)), CommandBlock.CHAIN))
                     
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(

@@ -32,7 +32,7 @@ class CommandBlock:
         self.metadata = metadata
         self.auto = auto
     
-    def _get_command_block_name(self) -> str:
+    def get_command_block_name(self) -> str:
         return {
             CommandBlock.IMPULSE: 'command_block',
             CommandBlock.CHAIN: 'chain_command_block',
@@ -41,12 +41,12 @@ class CommandBlock:
     
     def get_gen_command(self, offx: int, offy: int, offz: int) -> str:
         return 'setblock ~{0} ~{1} ~{2} minecraft:{3} {4} replace {{"Command":"{5}","auto":{6}b}}'.format(
-            offx, offy, offz, self._get_command_block_name(), self.metadata, self.command, int(self.auto)
+            offx, offy, offz, self.get_command_block_name(), self.metadata, self.command, int(self.auto)
         )
     
     def get_dump(self) -> List[str]:
         """Generates a list of Type, Metadata, Auto, Commmand. Mostly exists for Contraption.get_dump."""
-        return [self._get_command_block_name(), self.metadata, self.auto, self.command]
+        return [self.get_command_block_name(), self.metadata, self.auto, self.command]
 
 
 class Contraption:

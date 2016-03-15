@@ -101,13 +101,13 @@ class Contraption:
         return nbt
 
 
-class StringIDContainer:
+class IDContainer:
     
     _vars_to_ids = {}
     _id_counter = 0
     
     def __init__(self):
-        raise Exception('StringIDContainer cannot be instantiated.')
+        raise Exception('IDContainer cannot be instantiated.')
     
     @classmethod
     def _next_id(cls) -> int:
@@ -118,7 +118,7 @@ class StringIDContainer:
         else:
             cls._id_counter -= 1
             if cls._id_counter < -(2 ** 31):
-                raise Exception('Ran out of string IDs!')
+                raise Exception('IDContainer ran out of IDs!')
         return cls._id_counter
     
     @classmethod

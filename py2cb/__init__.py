@@ -158,6 +158,13 @@ def parse_node(node: ast.AST, contr: Contraption, x, y, z) -> Contraption:
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(
                         'entitydata @e[type=ArmorStand,tag=string_noname] {"Tags":["string"]}', CommandBlock.CHAIN))
+                
+                # Simple assignment - name = True/False/None (ex: n = True)
+                elif isinstance(node.value, ast.NameConstant):
+                    x += 1
+                    contr.add_block((x, y, z), CommandBlock(
+                        'scoreboard players set {0} py2cb_var {1}'
+                        .format(target.id, int(node.value.value)), CommandBlock.CHAIN))
 
 
 def parse(ast_root: ast.AST) -> Contraption:

@@ -2,8 +2,13 @@
 # -*- coding: utf-8
 
 import argparse
+import ast
 
 __author__ = 'Copper'
+
+
+def get_ast(code, filename):
+    return ast.parse(code, filename=filename)
 
 
 def parse_args():

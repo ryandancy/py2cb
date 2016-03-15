@@ -129,6 +129,18 @@ class IDContainer:
 stringids = IDContainer()
 
 
+consts = []
+
+
+def add_const(const: int, contr: Contraption, x: int, y: int, z: int) -> Tuple[Contraption, int, int, int]:
+    if const not in consts:
+        x += 1
+        contr.add_block((x, y, z), CommandBlock('scoreboard players set const_{0} py2cb_intrnl {0}'.format(const),
+                                                CommandBlock.CHAIN))
+        consts.append(const)
+    return contr, x, y, z
+
+
 def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tuple[Contraption, int, int, int]:
     # ASSIGNMENTS
     if isinstance(node, ast.Assign):
@@ -173,6 +185,14 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     contr.add_block((x, y, z), CommandBlock(
                         'scoreboard players operation {0} py2cb_var = expr py2cb_intrnl'
                         .format(target.id), CommandBlock.CHAIN))
+    
+    # BINOPS
+    elif isinstance(node, ast.BinOp):
+        # Addition
+        if isinstance(node.op, ast.Add):
+            for side in [node.left, node.right]:
+                if isinstance(side, ast.Num):
+                    contr, x, y, z = add_const(side.n, contr, x, y, z)
     
     return contr, x, y, z
 

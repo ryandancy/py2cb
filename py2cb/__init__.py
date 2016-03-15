@@ -154,8 +154,10 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 # Simple assignment - name = num (ex: n = 4)
                 if isinstance(node.value, ast.Num):
                     x += 1
-                    contr.add_block((x, y, z), CommandBlock('scoreboard players set {0} py2cb_var {1}'
-                                                            .format(target.id, node.value.n), CommandBlock.CHAIN))
+                    contr.add_block((x, y, z), CommandBlock(
+                        'scoreboard players set {0} py2cb_var {1}'.format(target.id, node.value.n),
+                        CommandBlock.CHAIN
+                    ))
                 
                 # Simple assignment - name = str (ex: n = 'foo')
                 elif isinstance(node.value, ast.Str):
@@ -163,24 +165,31 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(
                         'summon ArmorStand ~ ~1 ~ {{"NoGravity":1b,"CustomName":{0},"Tags":["string_noname"]}}'
-                        .format(node.value.s), CommandBlock.CHAIN))
+                        .format(node.value.s),
+                        CommandBlock.CHAIN
+                    ))
                     
                     x += 1
                     stringids.add(target.id)
                     contr.add_block((x, y, z), CommandBlock(
                         'scoreboard players set @e[type=ArmorStand,tag=string_noname] py2cb_var {0}'
-                        .format(stringids.get_id(target.id)), CommandBlock.CHAIN))
+                        .format(stringids.get_id(target.id)),
+                        CommandBlock.CHAIN
+                    ))
                     
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(
-                        'entitydata @e[type=ArmorStand,tag=string_noname] {"Tags":["string"]}', CommandBlock.CHAIN))
+                        'entitydata @e[type=ArmorStand,tag=string_noname] {"Tags":["string"]}',
+                        CommandBlock.CHAIN
+                    ))
                 
                 # Simple assignment - name = True/False/None (ex: n = True)
                 elif isinstance(node.value, ast.NameConstant):
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(
-                        'scoreboard players set {0} py2cb_var {1}'
-                        .format(target.id, int(node.value.value)), CommandBlock.CHAIN))
+                        'scoreboard players set {0} py2cb_var {1}'.format(target.id, int(node.value.value)),
+                        CommandBlock.CHAIN
+                    ))
                 
                 # Not-so-simple assignment - name = expr (ex: n = 39 + 2 * 3)
                 elif isinstance(node.value, ast.Expr):
@@ -188,7 +197,9 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(
                         'scoreboard players operation {0} py2cb_var = expr_{1} py2cb_intrnl'
-                        .format(target.id, exprids.get_id(node.value)), CommandBlock.CHAIN))
+                        .format(target.id, exprids.get_id(node.value)),
+                        CommandBlock.CHAIN
+                    ))
     
     # BINOPS
     elif isinstance(node, ast.BinOp):

@@ -165,6 +165,7 @@ def parse_node(node: ast.AST, contr: Contraption, x, y, z) -> Tuple[Contraption,
                     contr.add_block((x, y, z), CommandBlock(
                         'scoreboard players set {0} py2cb_var {1}'
                         .format(target.id, int(node.value.value)), CommandBlock.CHAIN))
+    
     return contr, x, y, z
 
 

@@ -101,6 +101,33 @@ class Contraption:
         return nbt
 
 
+class StringIDContainer:
+    
+    _vars_to_ids = {}
+    _id_counter = 0
+    
+    def __init__(self):
+        raise Exception('StringIDContainer cannot be instantiated.')
+    
+    @classmethod
+    def _next_id(cls) -> int:
+        if cls._id_counter >= 0:
+            cls._id_counter += 1
+            if cls._id_counter == 2 ** 31:
+                cls._id_counter = -1
+        else:
+            cls._id_counter -= 1
+            if cls._id_counter < -(2 ** 31):
+                raise Exception('Ran out of string IDs!')
+        return cls._id_counter
+    
+    @classmethod
+    def add(cls, var: str) -> None:
+        # Silently ignores adding multiple times
+        if var not in cls._vars_to_ids:
+            cls._vars_to_ids[var] = cls._next_id()
+
+
 def parse_node(node: ast.AST, contr: Contraption, x, y, z) -> Contraption:
     # ASSIGNMENTS
     if isinstance(node, ast.Assign):

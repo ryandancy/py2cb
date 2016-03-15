@@ -101,6 +101,31 @@ class Contraption:
         return nbt
 
 
+def parse_node(node: ast.AST, contr: Contraption, x, y, z) -> Contraption:
+    # ASSIGNMENTS
+    if isinstance(node, ast.Assign):
+        for target in node.targets:
+            # Assignment with names (n = _)
+            if isinstance(target, ast.Name):
+                # Simple assignment - name = num (ex: n = 4)
+                if isinstance(node.value, ast.Num):
+                    x += 1
+                    contr.add_block((x, y, z), CommandBlock('scoreboard players set {0} py2cb_var {1}'
+                                                            .format(target.id, node.value.n), CommandBlock.CHAIN))
+
+
+def parse(ast_root: ast.AST) -> Contraption:
+    res = Contraption()
+    x = y = z = 0
+    res.add_block((x, y, z), CommandBlock('scoreboard objectives add py2cb_const dummy Py2CB Constants',
+                                          CommandBlock.IMPULSE, auto=False))
+    x += 1
+    res.add_block((x, y, z), CommandBlock('scoreboard objectives add py2cb_var dummy Py2CB Variables',
+                                          CommandBlock.CHAIN))
+    
+    return parse_node(ast_root, res, x, y, z)
+
+
 def get_ast(code: str, filename: str) -> ast.AST:
     return ast.parse(code, filename=filename)
 

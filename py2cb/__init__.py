@@ -74,7 +74,7 @@ class Contraption:
     def get_schematic(self) -> NBTFile:
         """Exports this contraption to a schematic NBT file."""
         # Uses unofficial .schematic format found at the Minecraft Wiki (minecraft.gamepedia.com/Schematic_file_format)
-        nbt = NBTFile(name='')
+        nbt = NBTFile(name='Schematic', compression=NBTFile.Compression.GZIP)
         
         width = max(x for (x, y, z), cblock in self.cblocks) + 1
         height = max(y for (x, y, z), cblock in self.cblocks) + 1

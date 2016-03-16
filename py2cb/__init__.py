@@ -150,7 +150,7 @@ def add_const(const: int, contr: Contraption, x: int, y: int, z: int) -> Tuple[C
     return contr, x, y, z
 
 
-def get_player_and_obj_for_node(node: ast.AST) -> str:
+def get_player_and_obj(node: ast.AST) -> str:
     """Assumes that all relavant things are in place (const_n, etc)"""
     if isinstance(node, ast.Num):
         return 'const_{0} py2cb_intrnl'.format(node.n)
@@ -238,9 +238,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 contr.add_block((x, y, z), CommandBlock(
                     'scoreboard players operation expr_{0} py2cb_intrnl = {1}'.format(
                         exprids[node],
-                        'const_{0} py2cb_intrnl'.format(node.left.n)
-                        if isinstance(node.left, ast.Num) else
-                        '{0} py2cb_var'.format(node.left.id)
+                        get_player_and_obj(node)
                     ),
                     CommandBlock.CHAIN
                 ))
@@ -248,9 +246,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 contr.add_block((x, y, z), CommandBlock(
                     'scoreboard players operation expr_{0} py2cb_intrnl += {1}'.format(
                         exprids[node],
-                        'const_{0} py2cb_intrnl'.format(node.right.n)
-                        if isinstance(node.right, ast.Num) else
-                        '{0} py2cb_var'.format(node.right.id)
+                        get_player_and_obj(node)
                     ),
                     CommandBlock.CHAIN
                 ))

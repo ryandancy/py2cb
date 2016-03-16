@@ -122,7 +122,7 @@ class IDContainer:
         if var not in self._vars_to_ids:
             self._vars_to_ids[var] = self._next_id()
     
-    def get_id(self, var: Any) -> int:
+    def __getitem__(self, var: Any) -> int:
         return self._vars_to_ids[var]
     
     def __contains__(self, var: Any) -> bool:
@@ -173,7 +173,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     stringids.add(target.id)
                     contr.add_block((x, y, z), CommandBlock(
                         'scoreboard players set @e[type=ArmorStand,tag=string_noname] py2cb_var {0}'
-                        .format(stringids.get_id(target.id)),
+                        .format(stringids[target.id]),
                         CommandBlock.CHAIN
                     ))
                     
@@ -197,7 +197,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(
                         'scoreboard players operation {0} py2cb_var = expr_{1} py2cb_intrnl'
-                        .format(target.id, exprids.get_id(node.value)),
+                        .format(target.id, exprids[node.value]),
                         CommandBlock.CHAIN
                     ))
     
@@ -219,7 +219,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 exprids.add(node)
                 contr.add_block((x, y, z), CommandBlock(
                     'scoreboard players operation expr_{0} py2cb_intrnl = {1}'.format(
-                        exprids.get_id(node),
+                        exprids[node],
                         'const_{0} py2cb_intrnl'.format(node.left.n)
                         if isinstance(node.left, ast.Num) else
                         '{0} py2cb_var'.format(node.left.id)
@@ -229,7 +229,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 x += 1
                 contr.add_block((x, y, z), CommandBlock(
                     'scoreboard players operation expr_{0} py2cb_intrnl += {1}'.format(
-                        exprids.get_id(node),
+                        exprids[node],
                         'const_{0} py2cb_intrnl'.format(node.right.n)
                         if isinstance(node.right, ast.Num) else
                         '{0} py2cb_var'.format(node.right.id)

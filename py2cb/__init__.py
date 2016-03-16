@@ -427,7 +427,7 @@ def parse(ast_root: ast.Module) -> Contraption:
     res = Contraption()
     x = y = z = 0
     res.add_block((x, y, z), CommandBlock('scoreboard objectives add py2cb_intrnl dummy Py2CB Internal Variables',
-                                          auto=False))
+                                          type_=CommandBlock.IMPULSE, auto=False))
     x += 1
     res.add_block((x, y, z), CommandBlock('scoreboard objectives add py2cb_var dummy Py2CB Application Variables'))
     

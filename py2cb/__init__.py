@@ -257,13 +257,13 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
             exprids.add(node)
             contr.add_block((x, y, z), CommandBlock(
                 'scoreboard players operation expr_{0} py2cb_intrnl = {1}'
-                    .format(exprids[node], get_player_and_obj(node)),
+                    .format(exprids[node], get_player_and_obj(node.left)),
                 CommandBlock.CHAIN
             ))
             x += 1
             contr.add_block((x, y, z), CommandBlock(
                 'scoreboard players operation expr_{0} py2cb_intrnl {2}= {1}'
-                    .format(exprids[node], get_player_and_obj(node), get_op_char(node)),
+                    .format(exprids[node], get_player_and_obj(node.right), get_op_char(node)),
                 CommandBlock.CHAIN
             ))
     

@@ -243,7 +243,8 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     ))
                 
                 # Not-so-simple assignment - name = op (ex: n = 2 * 3)
-                elif type(node.value) in (ast.BinOp, ast.BoolOp, ast.UnaryOp, ast.IfExp):
+                # If it's an expr and it hasn't been caught yet, we assume it's a complexish expression
+                elif isinstance(node.value, ast.expr):
                     contr, x, y, z = parse_node(node.value, contr, x, y, z)
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(

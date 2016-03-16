@@ -179,7 +179,7 @@ def get_op_char(binop: ast.BinOp) -> str:
             ast.Mod: '%'
         }[type(binop.op)]
     except KeyError:
-        raise Exception('Invalid operation (only +, -, *, //, % are allowed).')
+        raise Exception('Invalid binary operation (only +, -, *, //, % are allowed).')
 
 
 def setup_internal_values(node: ast.AST, contr: Contraption, x: int, y: int, z: int) \

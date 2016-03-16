@@ -184,6 +184,7 @@ def get_op_char(binop: ast.BinOp) -> str:
 
 
 def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tuple[Contraption, int, int, int]:
+    print(ast.dump(node))
     # ASSIGNMENTS
     if isinstance(node, ast.Assign):
         for target in node.targets:
@@ -265,6 +266,10 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     .format(exprids[node], get_player_and_obj(node), get_op_char(node)),
                 CommandBlock.CHAIN
             ))
+    
+    # BARE EXPRs
+    elif isinstance(node, ast.Expr):
+        contr, x, y, z = parse_node(node.value, contr, x, y, z)
     
     return contr, x, y, z
 

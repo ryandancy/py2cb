@@ -397,6 +397,52 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
             CommandBlock.CHAIN, CommandBlock.EAST | CommandBlock.CONDITIONAL
         ))
     
+    # COMPARES
+    elif isinstance(node, ast.Compare):
+        for operand in [node.left] + node.comparators:
+            contr, x, y, z = setup_internal_values(operand, contr, x, y, z)
+        
+        left = node.left
+        for op, right in zip(node.ops, node.comparators):
+            current = ast.Compare(left=left, op=op, comparators=[right])
+            exprids.add(current)
+            
+            if type(op) in (ast.Eq, ast.NotEq, ast.Gt, ast.GtE, ast.Lt, ast.LtE):
+                x += 1
+                contr.add_block((x, y, z), CommandBlock(
+                    'scoreboard players operation temp py2cb_intrnl = {0}'.format(get_player_and_obj(left)),
+                    CommandBlock.CHAIN
+                ))
+                x += 1
+                contr.add_block((x, y, z), CommandBlock(
+                    'scoreboard players operation temp py2cb_intrnl -= {0}'.format(get_player_and_obj(right)),
+                    CommandBlock.CHAIN
+                ))
+                x += 1
+                contr.add_block((x, y, z), CommandBlock(
+                    'scoreboard players set expr_{0} py2cb_intrnl {1}'
+                        .format(exprids[current], int(isinstance(op, ast.NotEq))),
+                    CommandBlock.CHAIN
+                ))
+                x += 1
+                contr.add_block((x, y, z), CommandBlock(
+                    'scoreboard players test temp py2cb_intrnl {0} {1}'.format(
+                        {ast.Eq: 0, ast.NotEq: 0, ast.Gt: 1, ast.GtE: 0, ast.Lt: '*', ast.LtE: '*'}[type(op)],
+                        {ast.Eq: 0, ast.NotEq: 0, ast.Gt: '*', ast.GtE: '*', ast.Lt: -1, ast.LtE: 0}[type(op)]
+                    ),
+                    CommandBlock.CHAIN
+                ))
+                x += 1
+                contr.add_block((x, y, z), CommandBlock(
+                    'scoreboard players set expr_{0} py2cb_intrnl {1}'
+                        .format(exprids[current], int(not isinstance(op, ast.NotEq))),
+                    CommandBlock.CHAIN, CommandBlock.EAST | CommandBlock.CONDITIONAL
+                ))
+            else:
+                raise Exception('Invalid comparison operation (only ==, !=, <, <=, >, and >= are allowed).')
+            
+            left = right
+    
     # BARE EXPRs
     elif isinstance(node, ast.Expr):
         contr, x, y, z = parse_node(node.value, contr, x, y, z)

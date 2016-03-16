@@ -242,31 +242,29 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
     
     # BINOPS
     elif isinstance(node, ast.BinOp):
-        # Addition
-        if isinstance(node.op, ast.Add):
-            for side in [node.left, node.right]:
-                if isinstance(side, ast.Num):
-                    contr, x, y, z = add_const(side.n, contr, x, y, z)
-                elif isinstance(side, ast.Expr) and type(side) not in [ast.Name, ast.NameConstant] and \
-                        side not in exprids:
-                    exprids.add(side)
-                    contr, x, y, z = parse_node(side, contr, x, y, z)
-            
-            # <= is issubset operator on sets
-            if set(map(type, [node.left, node.right])) <= {ast.Num, ast.Name}:
-                x += 1
-                exprids.add(node)
-                contr.add_block((x, y, z), CommandBlock(
-                    'scoreboard players operation expr_{0} py2cb_intrnl = {1}'
-                        .format(exprids[node], get_player_and_obj(node)),
-                    CommandBlock.CHAIN
-                ))
-                x += 1
-                contr.add_block((x, y, z), CommandBlock(
-                    'scoreboard players operation expr_{0} py2cb_intrnl += {1}'
-                        .format(exprids[node], get_player_and_obj(node)),
-                    CommandBlock.CHAIN
-                ))
+        for side in [node.left, node.right]:
+            if isinstance(side, ast.Num):
+                contr, x, y, z = add_const(side.n, contr, x, y, z)
+            elif isinstance(side, ast.Expr) and type(side) not in [ast.Name, ast.NameConstant] and \
+                    side not in exprids:
+                exprids.add(side)
+                contr, x, y, z = parse_node(side, contr, x, y, z)
+        
+        # <= is issubset operator on sets
+        if set(map(type, [node.left, node.right])) <= {ast.Num, ast.Name}:
+            x += 1
+            exprids.add(node)
+            contr.add_block((x, y, z), CommandBlock(
+                'scoreboard players operation expr_{0} py2cb_intrnl = {1}'
+                    .format(exprids[node], get_player_and_obj(node)),
+                CommandBlock.CHAIN
+            ))
+            x += 1
+            contr.add_block((x, y, z), CommandBlock(
+                'scoreboard players operation expr_{0} py2cb_intrnl {2}= {1}'
+                    .format(exprids[node], get_player_and_obj(node), get_op_char(node)),
+                CommandBlock.CHAIN
+            ))
     
     return contr, x, y, z
 

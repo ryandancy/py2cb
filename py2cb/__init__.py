@@ -194,7 +194,6 @@ def setup_internal_values(node: ast.AST, contr: Contraption, x: int, y: int, z: 
 
 
 def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tuple[Contraption, int, int, int]:
-    print(ast.dump(node))
     # ASSIGNMENTS
     if isinstance(node, ast.Assign):
         for target in node.targets:

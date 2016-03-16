@@ -411,7 +411,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         
         left = node.left
         for op, right in zip(node.ops, node.comparators):
-            current = ast.Compare(left=left, op=op, comparators=[right])
+            current = ast.Compare(left=left, ops=[op], comparators=[right])
             exprids.add(current)
             
             if type(op) in (ast.Eq, ast.NotEq, ast.Gt, ast.GtE, ast.Lt, ast.LtE):
@@ -445,6 +445,14 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 raise Exception('Invalid comparison operation (only ==, !=, <, <=, >, and >= are allowed).')
             
             left = right
+        
+        exprids.add(node)
+        x += 1
+        # noinspection PyUnboundLocalVariable
+        contr.add_block((x, y, z), CommandBlock(
+            'scoreboard players operation expr_{0} py2cb_intrnl = expr_{1} py2cb_intrnl'
+                .format(exprids[node], exprids[current])
+        ))
     
     # IF STATEMENTS
     elif isinstance(node, ast.If):

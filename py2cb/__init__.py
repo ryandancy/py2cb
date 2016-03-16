@@ -183,6 +183,16 @@ def get_op_char(binop: ast.BinOp) -> str:
         raise Exception('Invalid operation (only +, -, *, /, % are allowed).')
 
 
+def setup_internal_values(node: ast.AST, contr: Contraption, x: int, y: int, z: int) \
+        -> Tuple[Contraption, int, int, int]:
+    if isinstance(node, ast.Num):
+        contr, x, y, z = add_const(node.n, contr, x, y, z)
+    elif type(node) not in [ast.Name, ast.NameConstant] and node not in exprids:
+        exprids.add(node)
+        contr, x, y, z = parse_node(node, contr, x, y, z)
+    return contr, x, y, z
+
+
 def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tuple[Contraption, int, int, int]:
     print(ast.dump(node))
     # ASSIGNMENTS
@@ -244,11 +254,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
     # BINOPS
     elif isinstance(node, ast.BinOp):
         for side in [node.left, node.right]:
-            if isinstance(side, ast.Num):
-                contr, x, y, z = add_const(side.n, contr, x, y, z)
-            elif type(side) not in [ast.Name, ast.NameConstant] and side not in exprids:
-                exprids.add(side)
-                contr, x, y, z = parse_node(side, contr, x, y, z)
+            contr, x, y, z = setup_internal_values(side, contr, x, y, z)
         
         # <= is issubset operator on sets
         if set(map(type, [node.left, node.right])) <= {ast.Num, ast.Name}:
@@ -279,11 +285,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 CommandBlock.CHAIN
             ))
         else:
-            if isinstance(node.values[0], ast.Num):  # TODO make a function for this, it's repeated
-                contr, x, y, z = add_const(node.values[0].n, contr, x, y, z)
-            elif type(node.values[0]) not in [ast.Name, ast.NameConstant] and node.values[0] not in exprids:
-                exprids.add(node.values[0])
-                contr, x, y, z = parse_node(node.values[0], contr, x, y, z)
+            contr, x, y, z = setup_internal_values(node.values[0], contr, x, y, z)
             
             x += 1
             contr.add_block((x, y, z), CommandBlock(
@@ -292,11 +294,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 CommandBlock.CHAIN
             ))
         
-        if isinstance(node.values[-1], ast.Num):
-            contr, x, y, z = add_const(node.values[-1].n, contr, x, y, z)
-        elif type(node.values[-1]) not in [ast.Name, ast.NameConstant] and node.values[-1] not in exprids:
-            exprids.add(node.values[-1])
-            contr, x, y, z = parse_node(node.values[-1], contr, x, y, z)
+        contr, x, y, z = setup_internal_values(node.values[-1], contr, x, y, z)
         
         if isinstance(node.op, ast.And):
             # a and b = a * b where a and b are both 0 or 1

@@ -266,6 +266,61 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 CommandBlock.CHAIN
             ))
     
+    # BOOLOPS
+    elif isinstance(node, ast.BoolOp):
+        exprids.add(node)
+        if len(node.values) > 2:
+            prev = ast.BoolOp(op=node.op, values=node.values[:-1], lineno=0, col_offset=0)
+            contr, x, y, z = parse_node(prev, contr, x, y, z)
+            x += 1
+            contr.add_block((x, y, z), CommandBlock(
+                'scoreboard players operation expr_{0} py2cb_intrnl = expr_{1} py2cb_intrnl'
+                    .format(exprids[node], exprids[prev]),
+                CommandBlock.CHAIN
+            ))
+        else:
+            if isinstance(node.values[0], ast.Num):  # TODO make a function for this, it's repeated
+                contr, x, y, z = add_const(node.values[0].n, contr, x, y, z)
+            elif type(node.values[0]) not in [ast.Name, ast.NameConstant] and node.values[0] not in exprids:
+                exprids.add(node.values[0])
+                contr, x, y, z = parse_node(node.values[0], contr, x, y, z)
+            
+            x += 1
+            contr.add_block((x, y, z), CommandBlock(
+                'scoreboard players operation expr_{0} py2cb_intrnl = {1}'
+                    .format(exprids[node], get_player_and_obj(node.values[0])),
+                CommandBlock.CHAIN
+            ))
+        
+        if isinstance(node.values[-1], ast.Num):
+            contr, x, y, z = add_const(node.values[-1].n, contr, x, y, z)
+        elif type(node.values[-1]) not in [ast.Name, ast.NameConstant] and node.values[-1] not in exprids:
+            exprids.add(node.values[-1])
+            contr, x, y, z = parse_node(node.values[-1], contr, x, y, z)
+        
+        if isinstance(node.op, ast.And):
+            # a and b = a * b where a and b are both 0 or 1
+            x += 1
+            contr.add_block((x, y, z), CommandBlock(
+                'scoreboard players operation expr_{0} py2cb_intrnl *= {1}'
+                    .format(exprids[node], get_player_and_obj(node.values[-1])),
+                CommandBlock.CHAIN
+            ))
+        else:  # isinstance(node.op, ast.Or) - it's the only other option
+            # a or b = min(a + b, 1) where a and b are both 0 or 1
+            contr, x, y, z = add_const(1, contr, x, y, z)
+            x += 1
+            contr.add_block((x, y, z), CommandBlock(
+                'scoreboard players operation expr_{0} py2cb_intrnl += {1}'
+                    .format(exprids[node], get_player_and_obj(node.values[-1])),
+                CommandBlock.CHAIN
+            ))
+            x += 1
+            contr.add_block((x, y, z), CommandBlock(
+                'scoreboard players operation expr_{0} py2cb_intrnl < const_1 py2cb_intrnl'.format(exprids[node]),
+                CommandBlock.CHAIN
+            ))
+    
     # BARE EXPRs
     elif isinstance(node, ast.Expr):
         contr, x, y, z = parse_node(node.value, contr, x, y, z)

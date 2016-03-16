@@ -236,7 +236,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(
                         'scoreboard players set {0} py2cb_var {1}'
-                            .format(target.id, nameconstant_to_int(node.value.value)),
+                            .format(target.id, nameconstant_to_int(node.value)),
                         CommandBlock.CHAIN
                     ))
                 

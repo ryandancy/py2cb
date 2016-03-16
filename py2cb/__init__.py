@@ -170,6 +170,19 @@ def nameconstant_to_int(node: ast.NameConstant) -> int:
         return int(node.value)
 
 
+def get_op_char(binop: ast.BinOp) -> str:
+    try:
+        return {
+            ast.Add: '+',
+            ast.Sub: '-',
+            ast.Mult: '*',
+            ast.Div: '/',
+            ast.Mod: '%'
+        }[type(binop)]
+    except KeyError:
+        raise Exception('Invalid operation (only +, -, *, /, % are allowed).')
+
+
 def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tuple[Contraption, int, int, int]:
     # ASSIGNMENTS
     if isinstance(node, ast.Assign):

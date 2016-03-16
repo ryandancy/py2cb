@@ -139,6 +139,7 @@ exprids = IDContainer()
 
 
 consts = []
+num_branches = 1
 
 
 def add_const(const: int, contr: Contraption, x: int, y: int, z: int) -> Tuple[Contraption, int, int, int]:
@@ -194,6 +195,7 @@ def setup_internal_values(node: ast.AST, contr: Contraption, x: int, y: int, z: 
 
 
 def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tuple[Contraption, int, int, int]:
+    global num_branches
     print(ast.dump(node))
     # ASSIGNMENTS
     if isinstance(node, ast.Assign):
@@ -415,6 +417,45 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 raise Exception('Invalid comparison operation (only ==, !=, <, <=, >, and >= are allowed).')
             
             left = right
+    
+    # IF STATEMENTS
+    elif isinstance(node, ast.If):
+        contr, x, y, z = setup_internal_values(node.test, contr, x, y, z)
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'scoreboard players test {0} 0 0'.format(get_player_and_obj(node.test))
+        ))
+        x += 1
+        num_branches += 1
+        contr.add_block((x, y, z), CommandBlock(
+            CommandBlock(
+                'setblock ~ ~ ~ minecraft:air', type_=CommandBlock.IMPULSE, auto=True
+            ).get_gen_command(-x, 0, num_branches - z),
+            metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
+        ))
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'scoreboard players test {0} * 0'.format(get_player_and_obj(node.test))
+        ))
+        x += 1
+        num_branches += 1
+        contr.add_block((x, y, z), CommandBlock(
+            CommandBlock(
+                'setblock ~ ~ ~ minecraft:air', type_=CommandBlock.IMPULSE, auto=True
+            ).get_gen_command(-x, 0, num_branches - z),
+            metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
+        ))
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'scoreboard players test {0} 0 *'.format(get_player_and_obj(node.test))
+        ))
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            CommandBlock(
+                'setblock ~ ~ ~ minecraft:air', type_=CommandBlock.IMPULSE, auto=True
+            ).get_gen_command(-x, 0, num_branches - z),
+            metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
+        ))
     
     # BARE EXPRs
     elif isinstance(node, ast.Expr):

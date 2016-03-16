@@ -190,7 +190,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(
                         'summon ArmorStand ~ ~1 ~ {{"NoGravity":1b,"CustomName":{0},"Tags":["string_noname"]}}'
-                        .format(node.value.s),
+                            .format(node.value.s),
                         CommandBlock.CHAIN
                     ))
                     
@@ -198,7 +198,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     stringids.add(target.id)
                     contr.add_block((x, y, z), CommandBlock(
                         'scoreboard players set @e[type=ArmorStand,tag=string_noname] py2cb_var {0}'
-                        .format(stringids[target.id]),
+                            .format(stringids[target.id]),
                         CommandBlock.CHAIN
                     ))
                     
@@ -213,7 +213,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(
                         'scoreboard players set {0} py2cb_var {1}'
-                        .format(target.id, nameconstant_to_int(node.value.value)),
+                            .format(target.id, nameconstant_to_int(node.value.value)),
                         CommandBlock.CHAIN
                     ))
                 
@@ -223,7 +223,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(
                         'scoreboard players operation {0} py2cb_var = expr_{1} py2cb_intrnl'
-                        .format(target.id, exprids[node.value]),
+                            .format(target.id, exprids[node.value]),
                         CommandBlock.CHAIN
                     ))
     
@@ -244,18 +244,14 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 x += 1
                 exprids.add(node)
                 contr.add_block((x, y, z), CommandBlock(
-                    'scoreboard players operation expr_{0} py2cb_intrnl = {1}'.format(
-                        exprids[node],
-                        get_player_and_obj(node)
-                    ),
+                    'scoreboard players operation expr_{0} py2cb_intrnl = {1}'
+                        .format(exprids[node], get_player_and_obj(node)),
                     CommandBlock.CHAIN
                 ))
                 x += 1
                 contr.add_block((x, y, z), CommandBlock(
-                    'scoreboard players operation expr_{0} py2cb_intrnl += {1}'.format(
-                        exprids[node],
-                        get_player_and_obj(node)
-                    ),
+                    'scoreboard players operation expr_{0} py2cb_intrnl += {1}'
+                        .format(exprids[node], get_player_and_obj(node)),
                     CommandBlock.CHAIN
                 ))
     

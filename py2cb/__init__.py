@@ -231,8 +231,8 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                         CommandBlock.CHAIN
                     ))
                 
-                # Not-so-simple assignment - name = binop (ex: n = 2 * 3)
-                elif isinstance(node.value, ast.BinOp):
+                # Not-so-simple assignment - name = op (ex: n = 2 * 3)
+                elif type(node) in (ast.BinOp, ast.BoolOp, ast.UnaryOp, ast.IfExp):
                     contr, x, y, z = parse_node(node.value, contr, x, y, z)
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(

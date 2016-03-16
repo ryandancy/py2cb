@@ -462,6 +462,24 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         ))
         x += 1
         contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
+        x += 1
+        
+        # if body block
+        xyz = x, y, z
+        x = 0
+        z = num_branches - 1
+        for stmt in node.body:
+            contr, x, y, z = parse_node(stmt, contr, x, y, z)
+        contr, x, y, z = add_pulsegiver_block(contr, x, y, z, *xyz)
+        
+        # else body block
+        x = 0
+        z = num_branches - 2
+        for stmt in node.orelse:
+            contr, x, y, z = parse_node(stmt, contr, x, y, z)
+        contr, x, y, z = add_pulsegiver_block(contr, x, y, z, *xyz)
+        
+        x, y, z = xyz
     
     # BARE EXPRs
     elif isinstance(node, ast.Expr):

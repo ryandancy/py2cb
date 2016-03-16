@@ -246,8 +246,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         for side in [node.left, node.right]:
             if isinstance(side, ast.Num):
                 contr, x, y, z = add_const(side.n, contr, x, y, z)
-            elif isinstance(side, ast.Expr) and type(side) not in [ast.Name, ast.NameConstant] and \
-                    side not in exprids:
+            elif type(side) not in [ast.Name, ast.NameConstant] and side not in exprids:
                 exprids.add(side)
                 contr, x, y, z = parse_node(side, contr, x, y, z)
         

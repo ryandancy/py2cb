@@ -326,6 +326,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
             contr, x, y, z = parse_node(node.operand, contr, x, y, z)
         else:
             contr, x, y, z = setup_internal_values(node.operand, contr, x, y, z)
+            exprids.add(node)
             
             if type(node.op) in (ast.USub, ast.Invert):
                 x += 1
@@ -340,15 +341,14 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 ))
                 x += 1
                 contr.add_block((x, y, z), CommandBlock(
-                    'scoreboard players operation {0} = temp py2cb_intrnl'.format(get_player_and_obj(node.operand)),
+                    'scoreboard players operation expr_{0} = temp py2cb_intrnl'.format(exprids[node]),
                     CommandBlock.CHAIN
                 ))
                 
                 if isinstance(node.op, ast.Invert):
                     contr, x, y, z = add_const(1, contr, x, y, z)
                     contr.add_block((x, y, z), CommandBlock(
-                        'scoreboard players operation {0} -= const_1 py2cb_intrnl'
-                            .format(get_player_and_obj(node.operand)),
+                        'scoreboard players operation expr_{0} -= const_1 py2cb_intrnl'.format(exprids[node]),
                         CommandBlock.CHAIN
                     ))
             else:  # isinstance(node.op, ast.Not) - it's the only other option
@@ -360,7 +360,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 ))
                 x += 1
                 contr.add_block((x, y, z), CommandBlock(
-                    'scoreboard players set {0} 0'.format(get_player_and_obj(node.operand)),
+                    'scoreboard players set expr_{0} 0'.format(exprids[node]),
                     CommandBlock.CHAIN
                 ))
                 x += 1
@@ -368,7 +368,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                                                         CommandBlock.CHAIN))
                 x += 1
                 contr.add_block((x, y, z), CommandBlock(
-                    'scoreboard players set {0} 1'.format(get_player_and_obj(node.operand)),
+                    'scoreboard players set expr_{0} 1'.format(exprids[node]),
                     CommandBlock.CHAIN, CommandBlock.EAST | CommandBlock.CONDITIONAL
                 ))
     

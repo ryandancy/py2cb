@@ -194,16 +194,22 @@ def setup_internal_values(node: ast.AST, contr: Contraption, x: int, y: int, z: 
 
 
 def add_pulsegiver_block(contr: Contraption, x: int, y: int, z: int,
-                         offx: Optional[int] = None, offy: Optional[int] = None, offz: Optional[int] = None,
+                         wx: Optional[int] = None, wy: Optional[int] = None, wz: Optional[int] = None,
                          conditional: bool = True) \
         -> Tuple[Contraption, int, int, int]:
-    """(offx, offy, offz) defaults to (-x, 0, num_branches - z)"""
-    if offx is None:
+    """(wx, wy, wz) defaults to (-x, 0, num_branches - z)"""
+    if wx is None:
         offx = -x
-    if offy is None:
+    else:
+        offx = wx - x
+    if wy is None:
         offy = 0
-    if offz is None:
+    else:
+        offy = wy - y
+    if wz is None:
         offz = num_branches - z
+    else:
+        offz = wz - z
     
     x += 1
     contr.add_block((x, y, z), CommandBlock(

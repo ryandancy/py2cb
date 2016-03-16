@@ -159,7 +159,7 @@ def get_player_and_obj(node: ast.AST) -> str:
     elif isinstance(node, ast.NameConstant):
         # TODO
         pass
-    elif isinstance(node, ast.Expr):
+    elif node in exprids:
         return 'expr_{0} py2cb_intrnl'.format(exprids[node])
 
 

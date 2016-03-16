@@ -203,7 +203,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     # Strings are represented by armor stands with custom names
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(
-                        'summon ArmorStand ~ ~1 ~ {{"NoGravity":1b,"CustomName":{0},"Tags":["string_noname"]}}'
+                        'summon ArmorStand ~ ~1 ~ {{"NoGravity":1b,"CustomName":"{0}","Tags":["string_noname"]}}'
                             .format(node.value.s),
                         CommandBlock.CHAIN
                     ))

@@ -163,6 +163,13 @@ def get_player_and_obj(node: ast.AST) -> str:
         return 'expr_{0} py2cb_intrnl'.format(exprids[node])
 
 
+def nameconstant_to_int(node: ast.NameConstant) -> int:
+    if node.value is None:
+        raise Exception('None may not be used in Py2CB files.')
+    else:
+        return int(node.value)
+
+
 def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tuple[Contraption, int, int, int]:
     # ASSIGNMENTS
     if isinstance(node, ast.Assign):
@@ -205,7 +212,8 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 elif isinstance(node.value, ast.NameConstant):
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(
-                        'scoreboard players set {0} py2cb_var {1}'.format(target.id, int(node.value.value)),
+                        'scoreboard players set {0} py2cb_var {1}'
+                        .format(target.id, nameconstant_to_int(node.value.value)),
                         CommandBlock.CHAIN
                     ))
                 

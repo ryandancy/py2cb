@@ -5,8 +5,7 @@ import argparse
 import ast
 
 from pynbt import NBTFile, TAG_Byte_Array, TAG_Compound, TAG_List, TAG_Short, TAG_String
-from typing import Tuple, List, Any
-
+from typing import Tuple, List, Any, Optional
 
 __author__ = 'Copper'
 
@@ -191,6 +190,29 @@ def setup_internal_values(node: ast.AST, contr: Contraption, x: int, y: int, z: 
     elif not isinstance(node, ast.Name) and node not in exprids:
         exprids.add(node)
         contr, x, y, z = parse_node(node, contr, x, y, z)
+    return contr, x, y, z
+
+
+def add_pulsegiver_block(contr: Contraption, x: int, y: int, z: int,
+                         offx: Optional[int] = None, offy: Optional[int] = None, offz: Optional[int] = None,
+                         conditional: bool = True) \
+        -> Tuple[Contraption, int, int, int]:
+    """(offx, offy, offz) defaults to (-x, 0, num_branches - z)"""
+    if offx is None:
+        offx = -x
+    if offy is None:
+        offy = 0
+    if offz is None:
+        offz = num_branches - z
+    
+    x += 1
+    contr.add_block((x, y, z), CommandBlock(
+        CommandBlock(
+            'setblock ~ ~ ~ minecraft:air', type_=CommandBlock.IMPULSE, auto=True
+        ).get_gen_command(offx, offy, offz),
+        metadata=CommandBlock.EAST | (CommandBlock.CONDITIONAL if conditional else 0)
+    ))
+    
     return contr, x, y, z
 
 
@@ -426,35 +448,20 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         ))
         x += 1
         num_branches += 1
-        contr.add_block((x, y, z), CommandBlock(
-            CommandBlock(
-                'setblock ~ ~ ~ minecraft:air', type_=CommandBlock.IMPULSE, auto=True
-            ).get_gen_command(-x, 0, num_branches - z),
-            metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
-        ))
+        contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
         x += 1
         contr.add_block((x, y, z), CommandBlock(
             'scoreboard players test {0} * 0'.format(get_player_and_obj(node.test))
         ))
         x += 1
         num_branches += 1
-        contr.add_block((x, y, z), CommandBlock(
-            CommandBlock(
-                'setblock ~ ~ ~ minecraft:air', type_=CommandBlock.IMPULSE, auto=True
-            ).get_gen_command(-x, 0, num_branches - z),
-            metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
-        ))
+        contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
         x += 1
         contr.add_block((x, y, z), CommandBlock(
             'scoreboard players test {0} 0 *'.format(get_player_and_obj(node.test))
         ))
         x += 1
-        contr.add_block((x, y, z), CommandBlock(
-            CommandBlock(
-                'setblock ~ ~ ~ minecraft:air', type_=CommandBlock.IMPULSE, auto=True
-            ).get_gen_command(-x, 0, num_branches - z),
-            metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
-        ))
+        contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
     
     # BARE EXPRs
     elif isinstance(node, ast.Expr):

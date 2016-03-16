@@ -157,8 +157,7 @@ def get_player_and_obj(node: ast.AST) -> str:
     elif isinstance(node, ast.Name):
         return '{0} py2cb_var'.format(node.id)
     elif isinstance(node, ast.NameConstant):
-        # TODO
-        pass
+        return 'const_{0} py2cb_intrnl'.format(nameconstant_to_int(node))
     elif node in exprids:
         return 'expr_{0} py2cb_intrnl'.format(exprids[node])
 
@@ -187,7 +186,9 @@ def setup_internal_values(node: ast.AST, contr: Contraption, x: int, y: int, z: 
         -> Tuple[Contraption, int, int, int]:
     if isinstance(node, ast.Num):
         contr, x, y, z = add_const(node.n, contr, x, y, z)
-    elif type(node) not in [ast.Name, ast.NameConstant] and node not in exprids:
+    elif isinstance(node, ast.NameConstant):
+        contr, x, y, z = add_const(nameconstant_to_int(node), contr, x, y, z)
+    elif not isinstance(node, ast.Name) and node not in exprids:
         exprids.add(node)
         contr, x, y, z = parse_node(node, contr, x, y, z)
     return contr, x, y, z

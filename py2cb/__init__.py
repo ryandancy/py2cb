@@ -150,6 +150,25 @@ def add_const(const: int, contr: Contraption, x: int, y: int, z: int) -> Tuple[C
     return contr, x, y, z
 
 
+def get_player_and_obj_for_node(node: ast.AST) -> str:
+    """Assumes that all relavant things are in place (const_n, etc)"""
+    # return {
+    #     ast.Num: 'const_{0} py2cb_intrnl'.format(node.n),
+    #     ast.Name: '{0} py2cb_var'.format(node.id),
+    #     # TODO NameConstant support here (just handle as int, except for None (maybe))
+    #     ast.Expr: ''
+    # }[type(node)]
+    if isinstance(node, ast.Num):
+        return 'const_{0} py2cb_intrnl'.format(node.n)
+    elif isinstance(node, ast.Name):
+        return '{0} py2cb_var'.format(node.id)
+    elif isinstance(node, ast.NameConstant):
+        # TODO
+        pass
+    elif isinstance(node, ast.Expr):
+        return 'expr_{0} py2cb_intrnl'.format(exprids[node])
+
+
 def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tuple[Contraption, int, int, int]:
     # ASSIGNMENTS
     if isinstance(node, ast.Assign):

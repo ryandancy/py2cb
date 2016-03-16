@@ -319,6 +319,58 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 CommandBlock.CHAIN
             ))
     
+    # UNARYOPS
+    elif isinstance(node, ast.UnaryOp):
+        if isinstance(node.op, ast.UAdd):
+            contr, x, y, z = parse_node(node.operand, contr, x, y, z)
+        else:
+            contr, x, y, z = setup_internal_values(node.operand, contr, x, y, z)
+            
+            if type(node.op) in (ast.USub, ast.Invert):
+                x += 1
+                contr.add_block((x, y, z), CommandBlock(
+                    'scoreboard players set temp py2cb_intrnl 0',
+                    CommandBlock.CHAIN
+                ))
+                x += 1
+                contr.add_block((x, y, z), CommandBlock(
+                    'scoreboard players operation temp py2cb_intrnl -= {0}'.format(get_player_and_obj(node.operand)),
+                    CommandBlock.CHAIN
+                ))
+                x += 1
+                contr.add_block((x, y, z), CommandBlock(
+                    'scoreboard players operation {0} = temp py2cb_intrnl'.format(get_player_and_obj(node.operand)),
+                    CommandBlock.CHAIN
+                ))
+                
+                if isinstance(node.op, ast.Invert):
+                    contr, x, y, z = add_const(1, contr, x, y, z)
+                    contr.add_block((x, y, z), CommandBlock(
+                        'scoreboard players operation {0} -= const_1 py2cb_intrnl'
+                            .format(get_player_and_obj(node.operand)),
+                        CommandBlock.CHAIN
+                    ))
+            else:  # isinstance(node.op, ast.Not) - it's the only other option
+                # Pseudocode: temp = operand; operand = 0; if temp == 0: operand = 1
+                x += 1
+                contr.add_block((x, y, z), CommandBlock(
+                    'scoreboard players operation temp py2cb_intrnl = {0}'.format(get_player_and_obj(node.operand)),
+                    CommandBlock.CHAIN
+                ))
+                x += 1
+                contr.add_block((x, y, z), CommandBlock(
+                    'scoreboard players set {0} 0'.format(get_player_and_obj(node.operand)),
+                    CommandBlock.CHAIN
+                ))
+                x += 1
+                contr.add_block((x, y, z), CommandBlock('scoreboard players test temp py2cb_intrnl 0 0',
+                                                        CommandBlock.CHAIN))
+                x += 1
+                contr.add_block((x, y, z), CommandBlock(
+                    'scoreboard players set {0} 1'.format(get_player_and_obj(node.operand)),
+                    CommandBlock.CHAIN, CommandBlock.EAST | CommandBlock.CONDITIONAL
+                ))
+    
     # BARE EXPRs
     elif isinstance(node, ast.Expr):
         contr, x, y, z = parse_node(node.value, contr, x, y, z)

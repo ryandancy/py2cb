@@ -372,6 +372,11 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     CommandBlock.CHAIN, CommandBlock.EAST | CommandBlock.CONDITIONAL
                 ))
     
+    # IFEXPS
+    elif isinstance(node, ast.IfExp):
+        contr, x, y, z = setup_internal_values(node.body, contr, x, y, z)
+        contr, x, y, z = setup_internal_values(node.orelse, contr, x, y, z)
+    
     # BARE EXPRs
     elif isinstance(node, ast.Expr):
         contr, x, y, z = parse_node(node.value, contr, x, y, z)

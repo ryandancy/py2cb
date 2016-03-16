@@ -103,18 +103,23 @@ class Contraption:
 
 class IDContainer:
     
-    _vars_to_ids = {}
-    _id_counter = 0
+    def __init__(self, has_limit=False):
+        self.has_limit = has_limit
+        self._vars_to_ids = {}
+        self._id_counter = 0
     
     def _next_id(self) -> int:
-        if self._id_counter >= 0:
-            self._id_counter += 1
-            if self._id_counter == 2 ** 31:
-                self._id_counter = -1
+        if self.has_limit:
+            if self._id_counter >= 0:
+                self._id_counter += 1
+                if self._id_counter == 2 ** 31:
+                    self._id_counter = -1
+            else:
+                self._id_counter -= 1
+                if self._id_counter < -(2 ** 31):
+                    raise Exception('IDContainer ran out of IDs!')
         else:
-            self._id_counter -= 1
-            if self._id_counter < -(2 ** 31):
-                raise Exception('IDContainer ran out of IDs!')
+            self._id_counter += 1
         return self._id_counter
     
     def add(self, var: Any) -> None:
@@ -129,7 +134,7 @@ class IDContainer:
         return var in self._vars_to_ids
 
 
-stringids = IDContainer()
+stringids = IDContainer(has_limit=True)
 exprids = IDContainer()
 
 

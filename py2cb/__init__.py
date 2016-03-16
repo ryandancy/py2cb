@@ -178,7 +178,7 @@ def get_op_char(binop: ast.BinOp) -> str:
             ast.Mult: '*',
             ast.Div: '/',
             ast.Mod: '%'
-        }[type(binop)]
+        }[type(binop.op)]
     except KeyError:
         raise Exception('Invalid operation (only +, -, *, /, % are allowed).')
 

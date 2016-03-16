@@ -374,8 +374,27 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
     
     # IFEXPS
     elif isinstance(node, ast.IfExp):
+        # Pseudocode: res = body; if test == 0: res = orelse
         contr, x, y, z = setup_internal_values(node.body, contr, x, y, z)
         contr, x, y, z = setup_internal_values(node.orelse, contr, x, y, z)
+        contr, x, y, z = setup_internal_values(node.test, contr, x, y, z)
+        exprids.add(node)
+        
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'scoreboard players operation expr_{0} = {1}'.format(exprids[node], get_player_and_obj(node.body)),
+            CommandBlock.CHAIN
+        ))
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'scoreboard players test {0} 0 0'.format(get_player_and_obj(node.orelse)),
+            CommandBlock.CHAIN
+        ))
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'scoreboard players operation expr_{0} = {1}'.format(exprids[node], get_player_and_obj(node.orelse)),
+            CommandBlock.CHAIN, CommandBlock.EAST | CommandBlock.CONDITIONAL
+        ))
     
     # BARE EXPRs
     elif isinstance(node, ast.Expr):

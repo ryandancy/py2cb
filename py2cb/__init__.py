@@ -125,7 +125,7 @@ class IDContainer:
     def get_id(self, var: Any) -> int:
         return self._vars_to_ids[var]
     
-    def has_var(self, var: Any) -> bool:
+    def __contains__(self, var: Any) -> bool:
         return var in self._vars_to_ids
 
 
@@ -209,7 +209,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 if isinstance(side, ast.Num):
                     contr, x, y, z = add_const(side.n, contr, x, y, z)
                 elif isinstance(side, ast.Expr) and type(side) not in [ast.Name, ast.NameConstant] and \
-                        not exprids.has_var(side):
+                        side not in exprids:
                     exprids.add(side)
                     contr, x, y, z = parse_node(side, contr, x, y, z)
             

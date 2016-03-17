@@ -489,21 +489,18 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         contr.add_block((x, y, z), CommandBlock(
             'scoreboard players test {0} 0 0'.format(get_player_and_obj(node.test))
         ))
-        x += 1
         num_branches += 1
         contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
         x += 1
         contr.add_block((x, y, z), CommandBlock(
             'scoreboard players test {0} * 0'.format(get_player_and_obj(node.test))
         ))
-        x += 1
         num_branches += 1
         contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
         x += 1
         contr.add_block((x, y, z), CommandBlock(
             'scoreboard players test {0} 0 *'.format(get_player_and_obj(node.test))
         ))
-        x += 1
         contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
         x += 1
         

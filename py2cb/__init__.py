@@ -46,7 +46,7 @@ class CommandBlock:
         }[self.type_]
     
     def get_gen_command(self, offx: int, offy: int, offz: int) -> str:
-        return 'setblock ~{0} ~{1} ~{2} minecraft:{3} {4} replace {{"Command":"{5}","auto":{6}b}}'.format(
+        return 'setblock ~{0} ~{1} ~{2} minecraft:{3} {4} replace {{Command:"{5}",auto:{6}b}}'.format(
             offx, offy, offz, self.get_command_block_name(), self.metadata, self.command, int(self.auto)
         )
     

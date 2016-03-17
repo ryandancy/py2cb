@@ -117,7 +117,7 @@ class Contraption:
         nbt['Blocks'] = TAG_Byte_Array(blocks)
         nbt['Data'] = TAG_Byte_Array(data)
         nbt['TileEntities'] = TAG_List(TAG_Compound, tiles)
-        nbt['Biomes'] = TAG_Byte_Array([127])  # The 'void' biome
+        nbt['Biomes'] = TAG_Byte_Array([127] * (width * length))  # The 'void' biome
         
         return nbt
 

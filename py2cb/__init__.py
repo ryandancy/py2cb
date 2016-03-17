@@ -4,7 +4,7 @@
 import argparse
 import ast
 
-from pynbt import NBTFile, TAG_Byte_Array, TAG_Compound, TAG_List, TAG_Short, TAG_String
+from pynbt import NBTFile, TAG_Byte, TAG_Byte_Array, TAG_Compound, TAG_Int, TAG_List, TAG_Short, TAG_String
 from typing import Tuple, List, Any, Optional
 
 __author__ = 'Copper'
@@ -72,9 +72,13 @@ class Contraption:
         return res
     
     def get_schematic(self) -> NBTFile:
-        """Exports this contraption to a schematic NBT file."""
+        """
+        Exports this contraption to a schematic NBT file.
+        Remember to pass compression=NBTFile.Compression.GZIP when calling save!
+        """
         # Uses unofficial .schematic format found at the Minecraft Wiki (minecraft.gamepedia.com/Schematic_file_format)
-        nbt = NBTFile(name='Schematic', compression=NBTFile.Compression.GZIP)
+        # (ish, because MCEdit uses a 'Biomes' TAG_Byte_Array not documented on the wiki)
+        nbt = NBTFile(name='Schematic')
         
         width = max(x for (x, y, z), cblock in self.cblocks) + 1
         height = max(y for (x, y, z), cblock in self.cblocks) + 1
@@ -83,19 +87,37 @@ class Contraption:
         # blocks and data are sorted by height/y, then length/z, then width/x (YZX)
         # therefore the index of x, y, z in blocks/data is (y * length + z) * width + x
         blocks = data = [0] * (width * length * height)  # 0 is air
+        tiles = []
         for (x, y, z), cblock in self.cblocks:
             index = (y * length + z) * width + x
             blocks[index] = cblock.get_block_id()
             data[index] = cblock.metadata
+            
+            tiles.append(TAG_Compound(value={
+                'x': TAG_Int(x),
+                'y': TAG_Int(y),
+                'z': TAG_Int(z),
+                'Command': TAG_String(cblock.command),
+                'auto': TAG_Byte(int(cblock.auto)),
+                # everything below here is the same for every cblock
+                'id': TAG_String('Control'),
+                'powered': TAG_Byte(0),
+                'conditionMet': TAG_Byte(0),
+                'TrackOutput': TAG_Byte(1),
+                'LastOutput': TAG_String(''),
+                'CustomName': TAG_String('@')
+            }))
         
         nbt['Width'] = TAG_Short(width)
         nbt['Height'] = TAG_Short(height)
         nbt['Length'] = TAG_Short(length)
         nbt['Materials'] = TAG_String('Alpha')
         nbt['Entities'] = TAG_List(TAG_Compound, [])
-        nbt['TileEntities'] = TAG_List(TAG_Compound, [])
+        nbt['TileTicks'] = TAG_List(TAG_Compound, [])
         nbt['Blocks'] = TAG_Byte_Array(blocks)
         nbt['Data'] = TAG_Byte_Array(data)
+        nbt['TileEntities'] = TAG_List(TAG_Compound, tiles)
+        nbt['Biomes'] = TAG_Byte_Array([127])  # The 'void' biome
         
         return nbt
 

@@ -427,9 +427,8 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
     # IFEXPS
     elif isinstance(node, ast.IfExp):
         # Pseudocode: res = body; if test == 0: res = orelse
-        contr, x, y, z = setup_internal_values(node.body, contr, x, y, z)
-        contr, x, y, z = setup_internal_values(node.orelse, contr, x, y, z)
-        contr, x, y, z = setup_internal_values(node.test, contr, x, y, z)
+        for expr in [node.body, node.orelse, node.test]:
+            contr, x, y, z = setup_internal_values(expr, contr, x, y, z)
         exprids.add(node)
         
         x += 1

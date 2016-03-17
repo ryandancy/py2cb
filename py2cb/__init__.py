@@ -209,13 +209,13 @@ def get_op_char(binop: ast.BinOp) -> str:
         raise Exception('Invalid binary operation (only +, -, *, //, % are allowed).')
 
 
-def setup_internal_values(node: ast.AST, contr: Contraption, x: int, y: int, z: int) \
+def setup_internal_values(node: ast.AST, contr: Contraption, x: int, y: int, z: int, redef: bool = False) \
         -> Tuple[Contraption, int, int, int]:
     if isinstance(node, ast.Num):
         contr, x, y, z = add_const(node.n, contr, x, y, z)
     elif isinstance(node, ast.NameConstant):
         contr, x, y, z = add_const(nameconstant_to_int(node), contr, x, y, z)
-    elif not isinstance(node, ast.Name) and node not in exprids:
+    elif not isinstance(node, ast.Name) and (True if redef else node in exprids):
         contr, x, y, z = parse_node(node, contr, x, y, z)
         if node not in exprids:
             exprids.add(node)
@@ -518,6 +518,53 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         for stmt in node.orelse:
             contr, x, y, z = parse_node(stmt, contr, x, y, z)
         contr, x, y, z = add_pulsegiver_block(contr, x, y, z, *xyz)
+        
+        x, y, z = xyz
+    
+    # WHILE LOOPS
+    elif isinstance(node, ast.While):
+        # There's an if statement to go to the while loop, and one at the end of the while loop
+        # 'else' on while loops/break/continue unsupported
+        if node.orelse:
+            raise Exception('else statement on while loop is not supported')
+        
+        contr, x, y, z = setup_internal_values(node.test, contr, x, y, z)
+        
+        x += 1
+        num_branches += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'scoreboard players test {0} * -1'.format(get_player_and_obj(node.test))
+        ))
+        contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'scoreboard players test {0} 1 *'.format(get_player_and_obj(node.test))
+        ))
+        contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
+        x += 1
+        
+        # while body branch
+        xyz = x, y, z
+        x = 0
+        z = num_branches - 1
+        for stmt in node.body:
+            contr, x, y, z = parse_node(stmt, contr, x, y, z)
+        contr, x, y, z = setup_internal_values(node.test, contr, x, y, z, redef=True)
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'scoreboard players test {0} 0 0'.format(get_player_and_obj(node.test))
+        ))
+        contr, x, y, z = add_pulsegiver_block(contr, x, y, z, *xyz)  # gives control back to while caller
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'scoreboard players test {0} * -1'.format(get_player_and_obj(node.test))
+        ))
+        contr, x, y, z = add_pulsegiver_block(contr, x, y, z)  # gives pulse to own branch
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'scoreboard players test {0} 1 *'.format(get_player_and_obj(node.test))
+        ))
+        contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
         
         x, y, z = xyz
     

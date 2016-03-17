@@ -196,7 +196,7 @@ def nameconstant_to_int(node: ast.NameConstant) -> int:
         return int(node.value)
 
 
-def get_op_char(binop: ast.BinOp) -> str:
+def get_op_char(op: ast.operator) -> str:
     try:
         return {
             ast.Add: '+',
@@ -204,7 +204,7 @@ def get_op_char(binop: ast.BinOp) -> str:
             ast.Mult: '*',
             ast.FloorDiv: '/',
             ast.Mod: '%'
-        }[type(binop.op)]
+        }[type(op)]
     except KeyError:
         raise Exception('Invalid binary operation (only +, -, *, //, % are allowed).')
 
@@ -306,6 +306,18 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
             else:
                 raise Exception('Only names are supported as assignment targets.')
     
+    # AUGMENTED ASSIGNMENTS
+    elif isinstance(node, ast.AugAssign):
+        if isinstance(node.target, ast.Name):
+            contr, x, y, z = setup_internal_values(node.value, contr, x, y, z)
+            x += 1
+            contr.add_block((x, y, z), CommandBlock(
+                'scoreboard players operation {0} py2cb_var {2}= {1}'
+                    .format(node.target.id, get_player_and_obj(node.value), get_op_char(node.op))
+            ))
+        else:
+            raise Exception('Only names are supported as assignment targets.')
+    
     # BINOPS
     elif isinstance(node, ast.BinOp):
         for side in [node.left, node.right]:
@@ -322,7 +334,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
             x += 1
             contr.add_block((x, y, z), CommandBlock(
                 'scoreboard players operation expr_{0} py2cb_intrnl {2}= {1}'
-                    .format(exprids[node], get_player_and_obj(node.right), get_op_char(node))
+                    .format(exprids[node], get_player_and_obj(node.right), get_op_char(node.op))
             ))
     
     # BOOLOPS

@@ -86,7 +86,8 @@ class Contraption:
         
         # blocks and data are sorted by height/y, then length/z, then width/x (YZX)
         # therefore the index of x, y, z in blocks/data is (y * length + z) * width + x
-        blocks = data = [0] * (width * length * height)  # 0 is air
+        blocks = [0] * (width * length * height)  # 0 is air
+        data = [0] * (width * length * height)
         tiles = []
         for (x, y, z), cblock in self.cblocks:
             index = (y * length + z) * width + x

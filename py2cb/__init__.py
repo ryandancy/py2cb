@@ -109,6 +109,11 @@ class Contraption:
                 'CustomName': TAG_String('@')
             }))
         
+        # Fudge the block ids to make them behave like unsigned bytes
+        for i, blockid in enumerate(blocks):
+            if blockid > 127:
+                blocks[i] = blockid - 256
+        
         nbt['Width'] = TAG_Short(width)
         nbt['Height'] = TAG_Short(height)
         nbt['Length'] = TAG_Short(length)

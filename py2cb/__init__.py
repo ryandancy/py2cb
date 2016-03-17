@@ -226,9 +226,9 @@ def add_pulsegiver_block(contr: Contraption, x: int, y: int, z: int,
                          wx: Optional[int] = None, wy: Optional[int] = None, wz: Optional[int] = None,
                          conditional: bool = True) \
         -> Tuple[Contraption, int, int, int]:
-    """(wx, wy, wz) defaults to (-x, 0, num_branches - z)"""
+    """(wx, wy, wz) defaults to (-x - 1, 0, num_branches - z - 1)"""
     if wx is None:
-        offx = -x
+        offx = -x - 1
     else:
         offx = wx - x
     if wy is None:
@@ -236,7 +236,7 @@ def add_pulsegiver_block(contr: Contraption, x: int, y: int, z: int,
     else:
         offy = wy - y
     if wz is None:
-        offz = num_branches - z
+        offz = num_branches - z - 1
     else:
         offz = wz - z
     

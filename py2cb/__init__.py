@@ -303,6 +303,8 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                         'scoreboard players operation {0} py2cb_var = expr_{1} py2cb_intrnl'
                             .format(target.id, exprids[node.value])
                     ))
+            else:
+                raise Exception('Only names are supported as assignment targets.')
     
     # BINOPS
     elif isinstance(node, ast.BinOp):

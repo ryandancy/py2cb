@@ -581,6 +581,10 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         
         x, y, z = xyz
     
+    # BREAK/CONTINUE - not supported
+    elif type(node) in (ast.Break, ast.Continue):
+        raise Exception('break/continue are not supported.')
+    
     # BARE EXPRs
     elif isinstance(node, ast.Expr):
         contr, x, y, z = parse_node(node.value, contr, x, y, z)

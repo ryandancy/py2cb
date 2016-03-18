@@ -23,7 +23,7 @@ def say(*args):
 
 
 def tell(to, *args):
-    tellraw((to, " whispers to you: ", *args, GREY | ITALICS))
+    tellraw((to, " whispers to you: ", *args, GREY | ITALIC))
 
 
 # Flags for tellraw
@@ -44,7 +44,7 @@ LIGHT_PURPLE = PURPLE = 0x00D
 YELLOW = 0x00E
 WHITE = 0x00F
 BOLD = 0x010
-ITALICS = 0x020
+ITALIC = 0x020
 UNDERLINED = 0x040
 STRIKETHROUGH = 0x080
 OBFUSCATED = 0x100
@@ -69,7 +69,7 @@ mc_to_ansi = {
     WHITE: Fore.WHITE + Style.BRIGHT,
     # None of the non-color formatting flags are *really* supported
     BOLD: '[BOLD] ',
-    ITALICS: '[ITALICS] ',
+    ITALIC: '[ITALIC] ',
     UNDERLINED: '[UNDERLINED] ',  # There is an ANSI escape for this, but there's no equivalent on Windows
     STRIKETHROUGH: '[STRIKETHROUGH] ',  # Same
     OBFUSCATED: '[OBFUSCATED] '

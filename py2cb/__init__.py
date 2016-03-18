@@ -761,6 +761,8 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         contr, x, y, z = add_pulsegiver_block(contr, x, y, z, *xyz)
         x += 1
         contr.add_block((x, y, z), CommandBlock('stats block ~-6 ~ ~ clear SuccessCount'))
+        
+        x, y, z = xyz
     
     # BREAK/CONTINUE - not supported
     elif type(node) in (ast.Break, ast.Continue):

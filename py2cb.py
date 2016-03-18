@@ -22,6 +22,10 @@ def say(*args):
     print('[@] ', *args, sep='')
 
 
+def tell(to, *args):
+    tellraw((to, " whispers to you: ", *args, GREY | ITALICS))
+
+
 # Flags for tellraw
 BLACK = 0x000
 DARK_BLUE = 0x001

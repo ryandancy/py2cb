@@ -163,6 +163,7 @@ class IDContainer:
 
 stringids = IDContainer(has_limit=True)
 exprids = IDContainer()
+listids = IDContainer()
 
 
 consts = []
@@ -293,6 +294,34 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                         'scoreboard players set {0} py2cb_var {1}'
                             .format(target.id, nameconstant_to_int(node.value))
                     ))
+                
+                # Simple assignment - name = list (ex: n = [5, 6, 7])
+                elif isinstance(node.value, ast.List):
+                    listids.add(target.id)
+                    for i, elem in enumerate(node.value.elts):
+                        contr, x, y, z = setup_internal_values(elem, contr, x, y, z)
+                        x += 1
+                        contr.add_block((x, y, z), CommandBlock(
+                            'summon ArmorStand ~ ~1 ~ {{NoGravity:1b,Tags:["list_noname"]}}'
+                        ))
+                        x += 1
+                        contr.add_block((x, y, z), CommandBlock(
+                            'scoreboard players set @e[type=ArmorStand,tag=list_noname] py2cb_ids {0}'
+                                .format(listids[target.id])
+                        ))
+                        x += 1
+                        contr.add_block((x, y, z), CommandBlock(
+                            'scoreboard players set @e[type=ArmorStand,tag=list_noname] py2cb_idxs {0}'.format(i)
+                        ))
+                        x += 1
+                        contr.add_block((x, y, z), CommandBlock(
+                            'scoreboard players set @e[type=ArmorStand,tag=list_noname] py2cb_var {0}'
+                                .format(get_player_and_obj(elem))
+                        ))
+                        x += 1
+                        contr.add_block((x, y, z), CommandBlock(
+                            'entitydata @e[type=ArmorStand,tag=list_noname] {Tags:["list"]}'
+                        ))
                 
                 # Not-so-simple assignment - name = op (ex: n = 2 * 3)
                 # If it's an expr and it hasn't been caught yet, we assume it's a complexish expression
@@ -599,6 +628,10 @@ def parse(ast_root: ast.Module) -> Contraption:
                                           type_=CommandBlock.IMPULSE, auto=False))
     x += 1
     res.add_block((x, y, z), CommandBlock('scoreboard objectives add py2cb_var dummy Py2CB Application Variables'))
+    x += 1
+    res.add_block((x, y, z), CommandBlock('scoreboard objectives add py2cb_ids dummy Py2CB IDs'))
+    x += 1
+    res.add_block((x, y, z), CommandBlock('scoreboard objectives add py2cb_idxs dummy Py2CB Indexes'))
     
     for statement in ast_root.body:
         res, x, y, z = parse_node(statement, res, x, y, z)

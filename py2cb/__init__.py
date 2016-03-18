@@ -253,6 +253,7 @@ def add_pulsegiver_block(contr: Contraption, x: int, y: int, z: int,
 
 def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tuple[Contraption, int, int, int]:
     global num_branches
+    
     # ASSIGNMENTS
     if isinstance(node, ast.Assign):
         for target in node.targets:
@@ -684,6 +685,82 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
         
         x, y, z = xyz
+    
+    # FOR LOOPS
+    elif isinstance(node, ast.For):
+        # 'else' on for loops is unsupported
+        if node.orelse:
+            raise Exception('else statement on for loop is not supported.')
+        
+        if node.iter not in listids:
+            raise Exception('Cannot iterate over non-list.')
+        
+        if not isinstance(node.target, ast.Name):
+            raise Exception('Only names can be iterator variables.')
+        
+        x += 1
+        contr.add_block((x, y, z), CommandBlock('scoreboard players set cntr py2cb_intrnl 0'))
+        
+        # If the iterator's not empty (has a 0th element), jump to the for body branch
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'testfor @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0},score_py2cb_idxs=0,'
+                       'score_py2cb_idxs_min=0]'.format(listids[node.iter])
+        ))
+        x += 1
+        num_branches += 1
+        contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
+        x += 1
+        
+        # for body branch
+        xyz = x, y, z
+        x = 0
+        z = num_branches - 1
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
+                'py2cb_idxs -= cntr py2cb_intrnl'.format(listids[node.iter])
+        ))
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'scoreboard players operation {0} py2cb_var = @e[type=ArmorStand,tag=list,score_py2cb_ids={1},'
+                'score_py2cb_ids_min={1},score_py2cb_idxs=0,score_py2cb_idxs_min=0] py2cb_var'
+                .format(node.target.id, listids[node.iter])
+        ))
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
+                'py2cb_idxs += cntr py2cb_intrnl'.format(listids[node.iter])
+        ))
+        
+        for stmt in node.body:
+            contr, x, y, z = parse_node(stmt, contr, x, y, z)
+        
+        x += 1
+        contr.add_block((x, y, z), CommandBlock('scoreboard players add cntr py2cb_intrnl 1'))
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
+                '-= cntr py2cb_intrnl'.format(listids[node.iter])
+        ))
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'testfor @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0},score_py2cb_idxs=0,'
+                'score_py2cb_idxs_min=0]'.format(listids[node.iter])
+        ))
+        contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
+        x += 1
+        contr.add_block((x, y, z), CommandBlock(
+            'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
+                '+= cntr py2cb_intrnl'.format(listids[node.iter])
+        ))
+        x += 1
+        contr.add_block((x, y, z), CommandBlock('stats block ~-3 ~ ~ set SuccessCount forreturn py2cb_intrnl'))
+        x += 1
+        contr.add_block((x, y, z), CommandBlock('scoreboard players test forreturn py2cb_intrnl 0 0'))
+        contr, x, y, z = add_pulsegiver_block(contr, x, y, z, *xyz)
+        x += 1
+        contr.add_block((x, y, z), CommandBlock('stats block ~-6 ~ ~ clear SuccessCount'))
     
     # BREAK/CONTINUE - not supported
     elif type(node) in (ast.Break, ast.Continue):

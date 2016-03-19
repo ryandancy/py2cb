@@ -1035,7 +1035,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         else:
             raise Exception('Only builtin, non-dynamic functions are supported in calls at this time.')
     
-    # BARE EXPRs
+    # BARE EXPRS
     elif isinstance(node, ast.Expr):
         contr, x, y, z = parse_node(node.value, contr, x, y, z)
     

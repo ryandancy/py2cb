@@ -49,8 +49,10 @@ UNDERLINED = 0x040
 STRIKETHROUGH = 0x080
 OBFUSCATED = 0x100
 
+COLOUR_MASK = 0x00F
+
 # For colours with DARK_ variants, the DARK_ version is ANSI's 'normal', and the light/normal version is ANSI's 'bright'
-mc_to_ansi = {
+bitmap_to_ansi = {
     BLACK: Fore.BLACK,
     DARK_BLUE: Fore.BLUE,
     DARK_GREEN: Fore.GREEN,
@@ -75,6 +77,25 @@ mc_to_ansi = {
     OBFUSCATED: '[OBFUSCATED] '
 }
 
+colours_to_mc = {
+    BLACK: 'black',
+    DARK_BLUE: 'dark_blue',
+    DARK_GREEN: 'dark_green',
+    DARK_AQUA: 'dark_aqua',
+    DARK_RED: 'dark_red',
+    DARK_PURPLE: 'dark_purple',
+    GOLD: 'gold',  # also DARK_YELLOW
+    GRAY: 'gray',  # also GREY
+    DARK_GRAY: 'dark_gray',  # also DARK_GREY
+    BLUE: 'blue',
+    GREEN: 'green',
+    AQUA: 'aqua',
+    RED: 'red',
+    LIGHT_PURPLE: 'light_purple',  # also PURPLE
+    YELLOW: 'yellow',
+    WHITE: 'white'
+}
+
 
 def tellraw(*args: Sequence[Any], to: Optional[str] = None) -> None:
     """
@@ -85,7 +106,7 @@ def tellraw(*args: Sequence[Any], to: Optional[str] = None) -> None:
     
     for arg in args:
         if isinstance(arg, tuple):
-            print(mc_to_ansi[arg[-1]], *arg[:-1], sep='', end='')
+            print(bitmap_to_ansi[arg[-1]], *arg[:-1], sep='', end='')
         else:
             print(arg, end='')
 
@@ -332,6 +353,61 @@ def add_pulsegiver_block(contr: Contraption, x: int, y: int, z: int,
     ))
     
     return contr, x, y, z
+
+
+def get_style_json(style: int) -> str:
+    styles = []
+    
+    colour_id = style & COLOUR_MASK
+    styles.append('"color":"{0}"'.format(colours_to_mc[colour_id]))
+    
+    if style & BOLD != 0:
+        styles.append('"bold":true')
+    if style & ITALIC != 0:
+        styles.append('"italic":true')
+    if style & UNDERLINED != 0:
+        styles.append('"underlined":true')
+    if style & STRIKETHROUGH != 0:
+        styles.append('"strikethrough":true')
+    if style & OBFUSCATED != 0:
+        styles.append('"obfuscated":true')
+    
+    return ','.join(styles)
+
+
+def get_json(node: ast.AST, style: Optional[int] = None) -> str:
+    """Assumes setup_internal_values has been called"""
+    if isinstance(node, ast.Num):
+        json = '"score":{{"name":"const_{0}","objective":"py2cb_intrnl"}}'.format(node.n)
+    elif isinstance(node, ast.NameConstant):
+        json = '"score":{{"name":"const_{0}","objective":"py2cb_intrnl"}}'.format(nameconstant_to_int(node))
+    elif isinstance(node, ast.Name):
+        if node in stringids:
+            json = '"score":{{"name":"@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]",' \
+                   '"objective":"py2cb_var"}}'.format(stringids[node])
+        else:
+            json = '"score":{{"name":"{0}","objective":"py2cb_var"}}'.format(node.id)
+    elif node in exprids:
+        json = '"score":{{"name":"expr_{0}","objective":"py2cb_intrnl"}}'.format(exprids[node])
+    else:
+        raise Exception('Only nums/strs/true/false/names/expressions are allowed in tellraw/other JSON.')
+    
+    if style:
+        json += ',' + get_style_json(style)
+    
+    return '{' + json + '}'
+
+
+def is_bitmap_safe(bitmap: ast.AST) -> bool:
+    if isinstance(bitmap, ast.Num) or isinstance(bitmap, ast.Name):
+        return True
+    
+    if isinstance(bitmap, ast.BinOp):
+        if not isinstance(bitmap.op, ast.BitOr):
+            return False
+        return is_bitmap_safe(bitmap.left) and is_bitmap_safe(bitmap.right)
+    
+    return False
 
 
 def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tuple[Contraption, int, int, int]:
@@ -869,6 +945,42 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 
                 x += 1
                 contr.add_block((x, y, z), CommandBlock('say {0}'.format(''.join(args))))
+            
+            # tellraw()
+            elif node.func.id == 'tellraw':
+                # Each arg is either a raw value, in which case there is no styling applied, or a tuple of raw values
+                # + a bitmap style, from the constants above OR'd together
+                json_args = []
+                for arg in node.args:
+                    if isinstance(arg, ast.Tuple):
+                        if not is_bitmap_safe(arg.elts[-1]):
+                            raise Exception('Malformed style in tellraw().')
+                        style = eval(compile(arg.elts[-1], '', 'eval'))  # if this doesn't work wrap arg in Expression()
+                        
+                        for elem in arg.elts[:-1]:
+                            contr, x, y, z = setup_internal_values(elem, contr, x, y, z)
+                            json_args.append(get_json(elem, style))
+                    else:
+                        contr, x, y, z = setup_internal_values(arg, contr, x, y, z)
+                        json_args.append(get_json(arg))
+                
+                # There's an optional 'to' keyword arg
+                if len(node.keywords) > 1:
+                    raise Exception('Only 1 keyword argument ("to") is allowed on tellraw().')
+                elif len(node.keywords):
+                    if node.keywords[0].arg != 'to':
+                        raise Exception('The keyword argument on tellraw() must be "to".')
+                    if not isinstance(node.keywords[0].value, ast.Str):
+                        raise Exception('The value of "to" on tellraw() must be a string literal.')
+                    to = node.keywords[0].value.s
+                else:
+                    to = '@a'
+                
+                x += 1
+                contr.add_block((x, y, z), CommandBlock(
+                    'tellraw {0} [{1}]'.format(to, ','.join('{' + json_arg + '}' for json_arg in json_args))
+                ))
+        
         else:
             raise Exception('Only builtin, non-dynamic functions are supported in calls at this time.')
     

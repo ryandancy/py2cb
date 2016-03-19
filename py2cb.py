@@ -949,6 +949,35 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 x += 1
                 contr.add_block((x, y, z), CommandBlock('say {0}'.format(''.join(args))))
             
+            # tell()
+            elif node.func.id == 'tell':
+                # Deal with the optional "to" keyword arg TODO This is repeated, move this to its own function
+                if len(node.keywords) > 1:
+                    raise Exception('Only 1 keyword argument ("to") is allowed on tell().')
+                elif len(node.keywords):
+                    if node.keywords[0].arg != 'to':
+                        raise Exception('The keyword argument on tell() must be "to".')
+                    if not isinstance(node.keywords[0].value, ast.Str):
+                        raise Exception('The value of "to" on tell() must be a string literal.')
+                    to = node.keywords[0].value.s
+                else:
+                    to = '@a'
+                
+                # This is also repeated, from say()...
+                args = []
+                for arg in node.args:
+                    if isinstance(arg, ast.Str):
+                        args.append(arg.s)
+                    elif isinstance(arg, ast.Name) and arg in stringids:
+                        args.append('@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]'
+                                    .format(stringids[arg]))
+                    else:
+                        raise Exception('Only literal strings and names naming strings are supported in say(). '
+                                        'Use tellraw() for better support.')
+                
+                x += 1
+                contr.add_block((x, y, z), CommandBlock('tell {0} {1}'.format(to, ''.join(args))))
+            
             # tellraw()
             elif node.func.id == 'tellraw':
                 # Each arg is either a raw value, in which case there is no styling applied, or a tuple of raw values

@@ -6,7 +6,7 @@ import ast
 import colorama
 
 from pynbt import NBTFile, TAG_Byte, TAG_Byte_Array, TAG_Compound, TAG_Int, TAG_List, TAG_Short, TAG_String
-from typing import Tuple, List, Any, Optional
+from typing import Tuple, List, Any, Optional, Sequence
 from colorama import Fore, Style
 
 __author__ = 'Copper'
@@ -18,11 +18,11 @@ colorama.init(autoreset=True)
 # This allows a valid script to be run in Python and behave the same (ish) as in Minecraft
 
 
-def say(*args):
+def say(*args: Sequence[Any]) -> None:
     print('[@] ', *args, sep='')
 
 
-def tell(to, *args):
+def tell(to: str, *args: Sequence[Any]) -> None:
     tellraw('[', to, '] ', ("@ whispers to you: ", *args, GREY | ITALIC))
 
 
@@ -76,7 +76,7 @@ mc_to_ansi = {
 }
 
 
-def tellraw(*args):
+def tellraw(*args: Sequence[Any]) -> None:
     """
     Each formatted arg is a tuple (*stuff, flags). Uses ANSI colour codes + Colorama.
     """

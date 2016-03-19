@@ -76,10 +76,13 @@ mc_to_ansi = {
 }
 
 
-def tellraw(*args: Sequence[Any]) -> None:
+def tellraw(*args: Sequence[Any], to: Optional[str] = None) -> None:
     """
     Each formatted arg is a tuple (*stuff, flags). Uses ANSI colour codes + Colorama.
     """
+    if to is not None:
+        print(to, end='')
+    
     for arg in args:
         if isinstance(arg, tuple):
             print(mc_to_ansi[arg[-1]], *arg[:-1], sep='', end='')

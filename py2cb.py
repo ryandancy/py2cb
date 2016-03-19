@@ -932,6 +932,9 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         if isinstance(node.func, ast.Name):
             # say()
             if node.func.id == 'say':
+                if len(node.keywords):
+                    raise Exception('say() takes no keyword arguments.')
+                
                 args = []
                 for arg in node.args:
                     if isinstance(arg, ast.Str):

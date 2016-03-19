@@ -6,7 +6,7 @@ import ast
 import colorama
 
 from pynbt import NBTFile, TAG_Byte, TAG_Byte_Array, TAG_Compound, TAG_Int, TAG_List, TAG_Short, TAG_String
-from typing import Tuple, List, Any, Optional, Sequence
+from typing import Tuple, List, Dict, Any, Optional, Sequence
 from colorama import Fore, Style
 
 __author__ = 'Copper'
@@ -408,6 +408,45 @@ def is_bitmap_safe(bitmap: ast.AST) -> bool:
         return is_bitmap_safe(bitmap.left) and is_bitmap_safe(bitmap.right)
     
     return False
+
+
+def parse_kwargs(keywords: Sequence[ast.keyword], allowed: Sequence[Tuple[str, Any, Sequence[type]]], method_name: str)\
+        -> Dict[str, Any]:
+    """
+    allowed is Sequence[Tuple[name, default: allowable_type, Sequence[ast_subtype_literal]]]
+    return type is Dict[str, allowable_type]
+    """
+    allowed_names, allowed_types, defaults = zip(*allowed)
+    
+    if len(keywords) > len(allowed):
+        raise Exception('Only {0} keyword argument{1} ({2}) {3} allowed on {4}().'.format(
+            len(allowed), '' if len(allowed) == 1 else 's', ', '.join(allowed_names),
+            'is' if len(allowed) == 1 else 'are', method_name
+        ))
+    
+    elif len(keywords):
+        res = {}
+        
+        for keyword in keywords:
+            if keyword.arg not in allowed_names:
+                raise Exception('Illegal keyword argument on {0}(): {1}.'.format(method_name, keyword.arg))
+            
+            index = allowed_names.index(keyword.arg)
+            
+            if type(keyword.value) not in allowed_types[index]:
+                raise Exception('The value of {0} in {1}() must be one of {2}.'.format(
+                    keyword.arg, method_name, ','.join(atype.__name__ for atype in allowed_types[index])
+                ))
+            
+            res[keyword.arg] = keyword.value
+        
+        for unspecified_kwarg_name in set(allowed_names) - set(res.keys()):
+            res[unspecified_kwarg_name] = defaults[allowed_names.index(unspecified_kwarg_name)]
+    
+    else:
+        res = {}
+    
+    return res
 
 
 def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tuple[Contraption, int, int, int]:
@@ -951,17 +990,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
             
             # tell()
             elif node.func.id == 'tell':
-                # Deal with the optional "to" keyword arg TODO This is repeated, move this to its own function
-                if len(node.keywords) > 1:
-                    raise Exception('Only 1 keyword argument ("to") is allowed on tell().')
-                elif len(node.keywords):
-                    if node.keywords[0].arg != 'to':
-                        raise Exception('The keyword argument on tell() must be "to".')
-                    if not isinstance(node.keywords[0].value, ast.Str):
-                        raise Exception('The value of "to" on tell() must be a string literal.')
-                    to = node.keywords[0].value.s
-                else:
-                    to = '@a'
+                to = parse_kwargs(node.keywords, [('to', ast.Str('@a'), [ast.Str])], 'tell')['to'].s
                 
                 # This is also repeated, from say()...
                 args = []
@@ -980,6 +1009,8 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
             
             # tellraw()
             elif node.func.id == 'tellraw':
+                to = parse_kwargs(node.keywords, [('to', ast.Str('@a'), [ast.Str])], 'tellraw')['to'].s
+                
                 # Each arg is either a raw value, in which case there is no styling applied, or a tuple of raw values
                 # + a bitmap style, from the constants above OR'd together
                 json_args = []
@@ -995,18 +1026,6 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     else:
                         contr, x, y, z = setup_internal_values(arg, contr, x, y, z)
                         json_args.append(get_json(arg))
-                
-                # There's an optional 'to' keyword arg
-                if len(node.keywords) > 1:
-                    raise Exception('Only 1 keyword argument ("to") is allowed on tellraw().')
-                elif len(node.keywords):
-                    if node.keywords[0].arg != 'to':
-                        raise Exception('The keyword argument on tellraw() must be "to".')
-                    if not isinstance(node.keywords[0].value, ast.Str):
-                        raise Exception('The value of "to" on tellraw() must be a string literal.')
-                    to = node.keywords[0].value.s
-                else:
-                    to = '@a'
                 
                 x += 1
                 contr.add_block((x, y, z), CommandBlock(

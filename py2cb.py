@@ -1039,6 +1039,11 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
     elif isinstance(node, ast.Expr):
         contr, x, y, z = parse_node(node.value, contr, x, y, z)
     
+    # PASS
+    elif isinstance(node, ast.Pass):
+        # Not technically necessary, but it's better to be explicit
+        pass
+    
     return contr, x, y, z
 
 

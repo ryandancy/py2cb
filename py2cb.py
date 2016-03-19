@@ -22,8 +22,8 @@ def say(*args: Sequence[Any]) -> None:
     print('[@] ', *args, sep='')
 
 
-def tell(to: str, *args: Sequence[Any]) -> None:
-    tellraw('[', to, '] ', ("@ whispers to you: ", *args, GREY | ITALIC))
+def tell(*args: Sequence[Any], to: str = None) -> None:
+    tellraw(("@ whispers to you: ", *args, GREY | ITALIC), to=to)
 
 
 # Flags for tellraw

@@ -23,7 +23,7 @@ def say(*args):
 
 
 def tell(to, *args):
-    tellraw((to, " whispers to you: ", *args, GREY | ITALIC))
+    tellraw('[', to, '] ', ("@ whispers to you: ", *args, GREY | ITALIC))
 
 
 # Flags for tellraw

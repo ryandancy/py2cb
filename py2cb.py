@@ -848,6 +848,27 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
     elif type(node) in (ast.Break, ast.Continue):
         raise Exception('break/continue are not supported.')
     
+    # FUNCTION CALLS
+    elif isinstance(node, ast.Call):
+        if isinstance(node.func, ast.Name):
+            # say()
+            if node.func.id == 'say':
+                args = []
+                for arg in node.args:
+                    if isinstance(arg, ast.Str):
+                        args.append(arg.s)
+                    elif isinstance(arg, ast.Name) and arg in stringids:
+                        args.append('@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]'
+                                    .format(stringids[arg]))
+                    else:
+                        raise Exception('Only literal strings and names naming strings are supported in say(). '
+                                        'Use tellraw() for better support.')
+                
+                x += 1
+                contr.add_block((x, y, z), CommandBlock('say {0}'.format(''.join(args))))
+        else:
+            raise Exception('Only builtin, non-dynamic functions are supported in calls at this time.')
+    
     # BARE EXPRs
     elif isinstance(node, ast.Expr):
         contr, x, y, z = parse_node(node.value, contr, x, y, z)

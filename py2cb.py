@@ -490,7 +490,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
                     # Strings are represented by armor stands with custom names
                     x += 1
                     contr.add_block((x, z), CommandBlock(
-                        'summon ArmorStand ~ ~1 ~ {{NoGravity:1b,CustomName:"{0}",Tags:["string_noname"]}}'
+                        'summon ArmorStand ~ ~1 ~ {{NoGravity:1b,CustomName:"{0}",Tags:["string_noname","py2cb"]}}'
                             .format(node.value.s)
                     ))
                     
@@ -503,7 +503,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
                     
                     x += 1
                     contr.add_block((x, z), CommandBlock(
-                        'entitydata @e[type=ArmorStand,tag=string_noname] {Tags:["string"]}'
+                        'entitydata @e[type=ArmorStand,tag=string_noname] {Tags:["string","py2cb"]}'
                     ))
                 
                 # Simple assignment - name = True/False/None (ex: n = True)
@@ -522,7 +522,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
                         contr, x, z = setup_internal_values(elem, contr, x, z)
                         x += 1
                         contr.add_block((x, z), CommandBlock(
-                            'summon ArmorStand ~ ~1 ~ {NoGravity:1b,Tags:["list_noname"]}'
+                            'summon ArmorStand ~ ~1 ~ {NoGravity:1b,Tags:["list_noname","py2cb"]}'
                         ))
                         x += 1
                         contr.add_block((x, z), CommandBlock(
@@ -540,7 +540,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
                         ))
                         x += 1
                         contr.add_block((x, z), CommandBlock(
-                            'entitydata @e[type=ArmorStand,tag=list_noname] {Tags:["list"]}'
+                            'entitydata @e[type=ArmorStand,tag=list_noname] {Tags:["list","py2cb"]}'
                         ))
                 
                 # Not-so-simple assignment - name = expr-or-something (ex: n = 2 * 3)
@@ -1088,6 +1088,8 @@ def parse(ast_root: ast.Module) -> Contraption:
     res.add_block((x, z), CommandBlock('scoreboard objectives add py2cb_ids dummy Py2CB IDs'))
     x += 1
     res.add_block((x, z), CommandBlock('scoreboard objectives add py2cb_idxs dummy Py2CB Indexes'))
+    x += 1
+    res.add_block((x, z), CommandBlock('kill @e[type=ArmorStand,tag=py2cb]'))
     
     for statement in ast_root.body:
         res, x, z = parse_node(statement, res, x, z)

@@ -402,7 +402,7 @@ def get_json(node: ast.AST, style: Optional[int] = None) -> str:
     
     if style:
         json += ',' + ','.join(parse_style_bitmap(
-            style, lambda name, value: '"{0}":{1}'.format(name, colours_to_mc[value] if name == 'color' else 'true')
+            style, lambda name, value: '"{0}":"{1}"'.format(name, colours_to_mc[value] if name == 'color' else 'true')
         ))
     
     return '{' + json + '}'

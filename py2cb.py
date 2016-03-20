@@ -1143,11 +1143,11 @@ if __name__ == '__main__':
     with open(parsed_args.input_file) as infile:
         contraption = parse(get_ast(infile.read(), infile.name))
         
-        if parsed_args.dumpfile:
+        if parsed_args.output_file:
             dump = contraption.get_dump()
-            with open(parsed_args.output_file) as dumpfile:
+            with open(parsed_args.output_file, 'w') as dumpfile:
                 dumpfile.write(pretty_print(dump))
-        elif parsed_args.schemfile:
+        elif parsed_args.schematic_file:
             with open(parsed_args.schematic_file, 'wb') as schemfile:
                 contraption.get_schematic().save(schemfile, compression=NBTFile.Compression.GZIP)
         else:

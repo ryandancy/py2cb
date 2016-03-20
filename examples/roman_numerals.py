@@ -16,7 +16,7 @@ while num <= 50:
     while loop:
         if n == 0:
             loop = False
-            tellraw((res_add, BLACK | BOLD | STRIKETHROUGH))
+            tellraw(('---', BLACK | BOLD | STRIKETHROUGH))
         else:
             do_rest = True
             for i in numeral_nums:

@@ -390,8 +390,8 @@ def get_json(node: ast.AST, style: Optional[int] = None) -> str:
         json = '"score":{{"name":"const_{0}","objective":"py2cb_intrnl"}}'.format(nameconstant_to_int(node))
     elif isinstance(node, ast.Name):
         if node in stringids:
-            json = '"score":{{"name":"@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]",' \
-                   '"objective":"py2cb_var"}}'.format(stringids[node])
+            json = '"selector":"@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]"' \
+                   .format(stringids[node])
         else:
             json = '"score":{{"name":"{0}","objective":"py2cb_var"}}'.format(node.id)
     elif node in exprids:

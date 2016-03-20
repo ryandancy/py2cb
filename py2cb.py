@@ -117,6 +117,7 @@ def tellraw(*args: Sequence[Any], to: Optional[str] = None) -> None:
                   sep='', end='')
         else:
             print(arg, end='')
+    print()
 
 
 # ======= COMPILER ======= #

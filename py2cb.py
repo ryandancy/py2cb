@@ -113,7 +113,8 @@ def tellraw(*args: Sequence[Any], to: Optional[str] = None) -> None:
     
     for arg in args:
         if isinstance(arg, tuple):
-            print(bitmap_to_ansi[arg[-1]], *arg[:-1], sep='', end='')
+            print(''.join(parse_style_bitmap(arg[-1], lambda name, value: bitmap_to_ansi[value])), *arg[:-1],
+                  sep='', end='')
         else:
             print(arg, end='')
 
@@ -365,22 +366,22 @@ def add_pulsegiver_block(contr: Contraption, x: int, y: int, z: int,
 T = TypeVar('T')
 
 
-def parse_style_bitmap(style: int, callback: Callable[[str, Optional[int]], T]) -> List[T]:
+def parse_style_bitmap(style: int, callback: Callable[[str, int], T]) -> List[T]:
     styles = []
     
     colour_id = style & COLOUR_MASK
-    styles.append(callback('color', colours_to_mc[colour_id]))
+    styles.append(callback('color', colour_id))
     
     if style & BOLD != 0:
-        styles.append(callback('bold', None))
+        styles.append(callback('bold', BOLD))
     if style & ITALIC != 0:
-        styles.append(callback('italic', None))
+        styles.append(callback('italic', ITALIC))
     if style & UNDERLINED != 0:
-        styles.append(callback('underlined', None))
+        styles.append(callback('underlined', UNDERLINED))
     if style & STRIKETHROUGH != 0:
-        styles.append(callback('strikethrough', None))
+        styles.append(callback('strikethrough', STRIKETHROUGH))
     if style & OBFUSCATED != 0:
-        styles.append(callback('obfuscated', None))
+        styles.append(callback('obfuscated', OBFUSCATED))
     
     return styles
 
@@ -403,8 +404,9 @@ def get_json(node: ast.AST, style: Optional[int] = None) -> str:
         raise Exception('Only nums/strs/true/false/names/expressions are allowed in tellraw/other JSON.')
     
     if style:
-        json += ',' + ','.join(parse_style_bitmap(style, lambda name, value:
-                                                  '"{0}":{1}'.format(name, 'true' if value is None else value)))
+        json += ',' + ','.join(parse_style_bitmap(
+            style, lambda name, value: '"{0}":{1}'.format(name, colours_to_mc[value] if name == 'color' else 'true')
+        ))
     
     return '{' + json + '}'
 

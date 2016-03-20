@@ -527,7 +527,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                         x += 1
                         contr.add_block((x, y, z), CommandBlock(
                             'scoreboard players set @e[type=ArmorStand,tag=list_noname] py2cb_ids {0}'
-                                .format(listids[target.id])
+                                .format(listids[target])
                         ))
                         x += 1
                         contr.add_block((x, y, z), CommandBlock(

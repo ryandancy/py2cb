@@ -544,14 +544,13 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                             'entitydata @e[type=ArmorStand,tag=list_noname] {Tags:["list"]}'
                         ))
                 
-                # Not-so-simple assignment - name = op (ex: n = 2 * 3)
-                # If it's an expr and it hasn't been caught yet, we assume it's a complexish expression
-                elif isinstance(node.value, ast.expr):
-                    contr, x, y, z = parse_node(node.value, contr, x, y, z)
+                # Not-so-simple assignment - name = expr-or-something (ex: n = 2 * 3)
+                else:
+                    contr, x, y, z = setup_internal_values(node.value, contr, x, y, z)
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(
-                        'scoreboard players operation {0} py2cb_var = expr_{1} py2cb_intrnl'
-                            .format(target, exprids[node.value])
+                        'scoreboard players operation {0} py2cb_var = {1}'
+                            .format(target, get_player_and_obj(node.value))
                     ))
             elif isinstance(target, ast.Subscript):
                 if target.value not in listids:

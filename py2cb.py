@@ -1071,7 +1071,7 @@ def parse(ast_root: ast.Module) -> Contraption:
     return res
 
 
-def get_ast(code: str, filename: str) -> ast.AST:
+def get_ast(code: str, filename: str) -> ast.Module:
     return ast.parse(code, filename=filename)
 
 
@@ -1088,3 +1088,41 @@ def parse_args() -> argparse.Namespace:
         help='The file to which the schematic will be dumped. Incompatible with --output-file/--output/-o')
     
     return parser.parse_args()
+
+
+def pretty_print(array: List[List[Any]]) -> str:
+    """array's items must all be equal in length"""
+    max_lens = [0] * len(array[0])
+    res = ''
+    
+    for row in array:
+        for column, cell in enumerate(row):
+            max_lens[column] = max(len(str(cell)), max_lens[column])
+    
+    max_lens = [x + 4 for x in max_lens]
+    
+    for row in array:
+        for column, cell in enumerate(row):
+            res += '{1:{0}}'.format(max_lens[column], cell)
+        res += '\n'
+    
+    return res
+
+
+# BEGIN MAIN PROGRAM
+if __name__ == '__main__':
+    parsed_args = parse_args()
+    
+    with open(parsed_args.infile) as infile:
+        contraption = parse(get_ast(infile.read(), infile.name))
+        
+        if parsed_args.dumpfile:
+            dump = contraption.get_dump()
+            with open(parsed_args.dumpfile) as dumpfile:
+                dumpfile.write(pretty_print(dump))
+        elif parsed_args.schemfile:
+            with open(parsed_args.schemfile, 'wb') as schemfile:
+                contraption.get_schematic().save(schemfile, compression=NBTFile.Compression.GZIP)
+        else:
+            # This shouldn't happen, dumpfile & schemfile are mutually exclusive, required args...
+            raise Exception('Either a dump or schematic file must be specified.')

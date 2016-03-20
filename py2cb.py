@@ -29,7 +29,7 @@ def say(*args: Sequence[Any]) -> None:
     print('[@] ', *args, sep='')
 
 
-def tell(*args: Sequence[Any], to: str = None) -> None:
+def tell(*args: Sequence[Any], to: Optional[str] = None) -> None:
     tellraw(("@ whispers to you: ", *args, GREY | ITALIC), to=to)
 
 

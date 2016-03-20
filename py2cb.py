@@ -522,7 +522,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
                         contr, x, z = setup_internal_values(elem, contr, x, z)
                         x += 1
                         contr.add_block((x, z), CommandBlock(
-                            'summon ArmorStand ~ ~1 ~ {{NoGravity:1b,Tags:["list_noname"]}}'
+                            'summon ArmorStand ~ ~1 ~ {NoGravity:1b,Tags:["list_noname"]}'
                         ))
                         x += 1
                         contr.add_block((x, z), CommandBlock(

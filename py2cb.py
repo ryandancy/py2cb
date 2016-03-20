@@ -432,7 +432,7 @@ def parse_kwargs(keywords: Sequence[ast.keyword], allowed: Sequence[Tuple[str, A
             'is' if len(allowed) == 1 else 'are', method_name
         ))
     
-    elif len(keywords):
+    elif keywords:
         res = {}
         
         for keyword in keywords:
@@ -447,12 +447,12 @@ def parse_kwargs(keywords: Sequence[ast.keyword], allowed: Sequence[Tuple[str, A
                 ))
             
             res[keyword.arg] = keyword.value
-        
-        for unspecified_kwarg_name in set(allowed_names) - set(res.keys()):
-            res[unspecified_kwarg_name] = defaults[allowed_names.index(unspecified_kwarg_name)]
     
     else:
         res = {}
+    
+    for unspecified_kwarg_name in set(allowed_names) - set(res.keys()):
+        res[unspecified_kwarg_name] = defaults[allowed_names.index(unspecified_kwarg_name)]
     
     return res
 

@@ -34,7 +34,7 @@ def tell(*args: Sequence[Any], to: Optional[str] = None) -> None:
 
 
 # Flags for tellraw
-BLACK = 0x000
+BLACK = 0x00F
 DARK_BLUE = 0x001
 DARK_GREEN = 0x002
 DARK_AQUA = 0x003
@@ -49,7 +49,7 @@ AQUA = 0x00B
 RED = 0x00C
 LIGHT_PURPLE = PURPLE = 0x00D
 YELLOW = 0x00E
-WHITE = 0x00F
+WHITE = 0x000  # white is the default
 BOLD = 0x010
 ITALIC = 0x020
 UNDERLINED = 0x040

@@ -823,13 +823,12 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
     elif isinstance(node, ast.If):
         contr, x, z = setup_internal_values(node.test, contr, x, z)
         
-        if node.orelse:
-            x += 1
-            contr.add_block((x, z), CommandBlock(
-                'scoreboard players test {0} 0 0'.format(get_player_and_obj(node.test))
-            ))
-            num_branches += 1
-            contr, x, z = add_pulsegiver_block(contr, x, z)
+        x += 1
+        contr.add_block((x, z), CommandBlock(
+            'scoreboard players test {0} 0 0'.format(get_player_and_obj(node.test))
+        ))
+        num_branches += 1
+        contr, x, z = add_pulsegiver_block(contr, x, z)
         
         x += 1
         contr.add_block((x, z), CommandBlock(
@@ -853,12 +852,11 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
         contr, x, z = add_pulsegiver_block(contr, x, z, *xz)
         
         # else body block
-        if node.orelse:
-            x = 0
-            z = num_branches - 2
-            for stmt in node.orelse:
-                contr, x, z = parse_node(stmt, contr, x, z)
-            contr, x, z = add_pulsegiver_block(contr, x, z, *xz)
+        x = 0
+        z = num_branches - 2
+        for stmt in node.orelse:
+            contr, x, z = parse_node(stmt, contr, x, z)
+        contr, x, z = add_pulsegiver_block(contr, x, z, *xz)
         
         x, z = xz
     

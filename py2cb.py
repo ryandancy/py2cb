@@ -967,7 +967,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
         x += 1
         contr.add_block((x, z), CommandBlock(
             'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
-                '-= cntr py2cb_intrnl'.format(listids[node.iter.id])
+                'py2cb_idxs -= cntr py2cb_intrnl'.format(listids[node.iter.id])
         ))
         x += 1
         contr.add_block((x, z), CommandBlock(
@@ -978,7 +978,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
         x += 1
         contr.add_block((x, z), CommandBlock(
             'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
-                '+= cntr py2cb_intrnl'.format(listids[node.iter.id])
+                'py2cb_idxs += cntr py2cb_intrnl'.format(listids[node.iter.id])
         ))
         x += 1
         contr.add_block((x, z), CommandBlock('stats block ~-3 ~ ~ set SuccessCount forreturn py2cb_intrnl'))

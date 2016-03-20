@@ -1098,10 +1098,10 @@ def parse_args() -> argparse.Namespace:
     
     output_group = parser.add_mutually_exclusive_group(required=True)
     output_group.add_argument(
-        ['--output-file', '--output', '-o'], dest='dumpfile', type=str,
+        ['--output-file', '--output', '-o'], type=str,
         help='The file to which commands will be dumped. Incompatible with --schematic-file/--schematic/-s')
     output_group.add_argument(
-        ['--schematic-file', '--schematic', '-s'], dest='schemfile', type=str,
+        ['--schematic-file', '--schematic', '-s'], type=str,
         help='The file to which the schematic will be dumped. Incompatible with --output-file/--output/-o')
     
     return parser.parse_args()
@@ -1135,10 +1135,10 @@ if __name__ == '__main__':
         
         if parsed_args.dumpfile:
             dump = contraption.get_dump()
-            with open(parsed_args.dumpfile) as dumpfile:
+            with open(parsed_args.output_file) as dumpfile:
                 dumpfile.write(pretty_print(dump))
         elif parsed_args.schemfile:
-            with open(parsed_args.schemfile, 'wb') as schemfile:
+            with open(parsed_args.schematic_file, 'wb') as schemfile:
                 contraption.get_schematic().save(schemfile, compression=NBTFile.Compression.GZIP)
         else:
             # This shouldn't happen, dumpfile & schemfile are mutually exclusive, required args...

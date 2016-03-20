@@ -1130,7 +1130,7 @@ def pretty_print(array: List[List[Any]]) -> str:
     
     for row in array:
         for column, cell in enumerate(row):
-            res += '{1:{0}}'.format(max_lens[column], cell)
+            res += '{1:<{0}}'.format(max_lens[column], str(cell).replace('\n', r'\n'))
         res += '\n'
     
     return res

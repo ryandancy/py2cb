@@ -372,16 +372,10 @@ def parse_style_bitmap(style: int, callback: Callable[[str, int], T]) -> List[T]
     colour_id = style & COLOUR_MASK
     styles.append(callback('color', colour_id))
     
-    if style & BOLD != 0:
-        styles.append(callback('bold', BOLD))
-    if style & ITALIC != 0:
-        styles.append(callback('italic', ITALIC))
-    if style & UNDERLINED != 0:
-        styles.append(callback('underlined', UNDERLINED))
-    if style & STRIKETHROUGH != 0:
-        styles.append(callback('strikethrough', STRIKETHROUGH))
-    if style & OBFUSCATED != 0:
-        styles.append(callback('obfuscated', OBFUSCATED))
+    for name, bitmap in zip(['bold', 'italic', 'underlined', 'strikethrough', 'obfuscated'],
+                            [BOLD, ITALIC, UNDERLINED, STRIKETHROUGH, OBFUSCATED]):
+        if style & bitmap != 0:
+            styles.append(callback(name, bitmap))
     
     return styles
 

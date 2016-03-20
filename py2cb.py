@@ -456,6 +456,20 @@ def parse_kwargs(keywords: Sequence[ast.keyword], allowed: Sequence[Tuple[str, A
     return res
 
 
+def get_func_name(node: ast.Call) -> str:
+    # spam()
+    if isinstance(node.func, ast.Name):
+        return node.func.id
+    
+    # spam.ham()
+    elif isinstance(node.func, ast.Attribute):
+        return node.func.attr
+    
+    # Something illegal like spam()()
+    else:
+        raise Exception('Illegal function call.')
+
+
 def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tuple[Contraption, int, int, int]:
     global num_branches
     
@@ -975,72 +989,74 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
     
     # FUNCTION CALLS
     elif isinstance(node, ast.Call):
-        if isinstance(node.func, ast.Name):
-            # say()
-            if node.func.id == 'say':
-                if len(node.keywords):
-                    raise Exception('say() takes no keyword arguments.')
-                
-                args = []
-                for arg in node.args:
-                    if isinstance(arg, ast.Str):
-                        args.append(arg.s)
-                    elif isinstance(arg, ast.Name) and arg in stringids:
-                        args.append('@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]'
-                                    .format(stringids[arg]))
-                    else:
-                        raise Exception('Only literal strings and names naming strings are supported in say(). '
-                                        'Use tellraw() for better support.')
-                
-                x += 1
-                contr.add_block((x, y, z), CommandBlock('say {0}'.format(''.join(args))))
-            
-            # tell()
-            elif node.func.id == 'tell':
-                to = parse_kwargs(node.keywords, [('to', ast.Str('@a'), [ast.Str])], 'tell')['to'].s
-                
-                # This is also repeated, from say()...
-                args = []
-                for arg in node.args:
-                    if isinstance(arg, ast.Str):
-                        args.append(arg.s)
-                    elif isinstance(arg, ast.Name) and arg in stringids:
-                        args.append('@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]'
-                                    .format(stringids[arg]))
-                    else:
-                        raise Exception('Only literal strings and names naming strings are supported in say(). '
-                                        'Use tellraw() for better support.')
-                
-                x += 1
-                contr.add_block((x, y, z), CommandBlock('tell {0} {1}'.format(to, ''.join(args))))
-            
-            # tellraw()
-            elif node.func.id == 'tellraw':
-                to = parse_kwargs(node.keywords, [('to', ast.Str('@a'), [ast.Str])], 'tellraw')['to'].s
-                
-                # Each arg is either a raw value, in which case there is no styling applied, or a tuple of raw values
-                # + a bitmap style, from the constants above OR'd together
-                json_args = []
-                for arg in node.args:
-                    if isinstance(arg, ast.Tuple):
-                        if not is_bitmap_safe(arg.elts[-1]):
-                            raise Exception('Malformed style in tellraw().')
-                        style = eval(compile(arg.elts[-1], '', 'eval'))  # if this doesn't work wrap arg in Expression()
-                        
-                        for elem in arg.elts[:-1]:
-                            contr, x, y, z = setup_internal_values(elem, contr, x, y, z)
-                            json_args.append(get_json(elem, style))
-                    else:
-                        contr, x, y, z = setup_internal_values(arg, contr, x, y, z)
-                        json_args.append(get_json(arg))
-                
-                x += 1
-                contr.add_block((x, y, z), CommandBlock(
-                    'tellraw {0} [{1}]'.format(to, ','.join('{' + json_arg + '}' for json_arg in json_args))
-                ))
+        func_name = get_func_name(node)
         
+        # say()
+        if func_name == 'say':
+            if len(node.keywords):
+                raise Exception('say() takes no keyword arguments.')
+            
+            args = []
+            for arg in node.args:
+                if isinstance(arg, ast.Str):
+                    args.append(arg.s)
+                elif isinstance(arg, ast.Name) and arg in stringids:
+                    args.append('@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]'
+                                .format(stringids[arg]))
+                else:
+                    raise Exception('Only literal strings and names naming strings are supported in say(). '
+                                    'Use tellraw() for better support.')
+            
+            x += 1
+            contr.add_block((x, y, z), CommandBlock('say {0}'.format(''.join(args))))
+        
+        # tell()
+        elif func_name == 'tell':
+            to = parse_kwargs(node.keywords, [('to', ast.Str('@a'), [ast.Str])], 'tell')['to'].s
+            
+            # This is also repeated, from say()...
+            args = []
+            for arg in node.args:
+                if isinstance(arg, ast.Str):
+                    args.append(arg.s)
+                elif isinstance(arg, ast.Name) and arg in stringids:
+                    args.append('@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]'
+                                .format(stringids[arg]))
+                else:
+                    raise Exception('Only literal strings and names naming strings are supported in say(). '
+                                    'Use tellraw() for better support.')
+            
+            x += 1
+            contr.add_block((x, y, z), CommandBlock('tell {0} {1}'.format(to, ''.join(args))))
+        
+        # tellraw()
+        elif func_name == 'tellraw':
+            to = parse_kwargs(node.keywords, [('to', ast.Str('@a'), [ast.Str])], 'tellraw')['to'].s
+            
+            # Each arg is either a raw value, in which case there is no styling applied, or a tuple of raw values
+            # + a bitmap style, from the constants above OR'd together
+            json_args = []
+            for arg in node.args:
+                if isinstance(arg, ast.Tuple):
+                    if not is_bitmap_safe(arg.elts[-1]):
+                        raise Exception('Malformed style in tellraw().')
+                    style = eval(compile(arg.elts[-1], '', 'eval'))  # if this doesn't work wrap arg in Expression()
+                    
+                    for elem in arg.elts[:-1]:
+                        contr, x, y, z = setup_internal_values(elem, contr, x, y, z)
+                        json_args.append(get_json(elem, style))
+                else:
+                    contr, x, y, z = setup_internal_values(arg, contr, x, y, z)
+                    json_args.append(get_json(arg))
+            
+            x += 1
+            contr.add_block((x, y, z), CommandBlock(
+                'tellraw {0} [{1}]'.format(to, ','.join('{' + json_arg + '}' for json_arg in json_args))
+            ))
+        
+        # something else
         else:
-            raise Exception('Only builtin, non-dynamic functions are supported in calls at this time.')
+            raise Exception('Unknown function name "{0}".'.format(func_name))
     
     # BARE EXPRS
     elif isinstance(node, ast.Expr):

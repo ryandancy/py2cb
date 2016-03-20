@@ -389,7 +389,7 @@ def get_json(node: ast.AST, style: Optional[int] = None) -> str:
     elif isinstance(node, ast.Name):
         if node in stringids:
             json = '"selector":"@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]"' \
-                   .format(stringids[node])
+                   .format(stringids[node.id])
         else:
             json = '"score":{{"name":"{0}","objective":"py2cb_var"}}'.format(node.id)
     elif node in exprids:
@@ -495,10 +495,10 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
                     ))
                     
                     x += 1
-                    stringids.add(target)
+                    stringids.add(target.id)
                     contr.add_block((x, z), CommandBlock(
                         'scoreboard players set @e[type=ArmorStand,tag=string_noname] py2cb_var {0}'
-                            .format(stringids[target])
+                            .format(stringids[target.id])
                     ))
                     
                     x += 1
@@ -1011,7 +1011,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
                     args.append(arg.s)
                 elif isinstance(arg, ast.Name) and arg in stringids:
                     args.append('@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]'
-                                .format(stringids[arg]))
+                                .format(stringids[arg.id]))
                 else:
                     raise Exception('Only literal strings and names naming strings are supported in say(). '
                                     'Use tellraw() for better support.')
@@ -1030,7 +1030,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
                     args.append(arg.s)
                 elif isinstance(arg, ast.Name) and arg in stringids:
                     args.append('@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]'
-                                .format(stringids[arg]))
+                                .format(stringids[arg.id]))
                 else:
                     raise Exception('Only literal strings and names naming strings are supported in say(). '
                                     'Use tellraw() for better support.')

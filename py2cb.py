@@ -1098,10 +1098,10 @@ def parse_args() -> argparse.Namespace:
     
     output_group = parser.add_mutually_exclusive_group(required=True)
     output_group.add_argument(
-        ['--output-file', '--output', '-o'], type=str,
+        '--output-file', '--output', '-o', type=str,
         help='The file to which commands will be dumped. Incompatible with --schematic-file/--schematic/-s')
     output_group.add_argument(
-        ['--schematic-file', '--schematic', '-s'], type=str,
+        '--schematic-file', '--schematic', '-s', type=str,
         help='The file to which the schematic will be dumped. Incompatible with --output-file/--output/-o')
     
     return parser.parse_args()

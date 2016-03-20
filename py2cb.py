@@ -827,12 +827,15 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
     # IF STATEMENTS
     elif isinstance(node, ast.If):
         contr, x, y, z = setup_internal_values(node.test, contr, x, y, z)
-        x += 1
-        contr.add_block((x, y, z), CommandBlock(
-            'scoreboard players test {0} 0 0'.format(get_player_and_obj(node.test))
-        ))
-        num_branches += 1
-        contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
+        
+        if node.orelse:
+            x += 1
+            contr.add_block((x, y, z), CommandBlock(
+                'scoreboard players test {0} 0 0'.format(get_player_and_obj(node.test))
+            ))
+            num_branches += 1
+            contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
+        
         x += 1
         contr.add_block((x, y, z), CommandBlock(
             'scoreboard players test {0} * -1'.format(get_player_and_obj(node.test))
@@ -855,11 +858,12 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         contr, x, y, z = add_pulsegiver_block(contr, x, y, z, *xyz)
         
         # else body block
-        x = 0
-        z = num_branches - 2
-        for stmt in node.orelse:
-            contr, x, y, z = parse_node(stmt, contr, x, y, z)
-        contr, x, y, z = add_pulsegiver_block(contr, x, y, z, *xyz)
+        if node.orelse:
+            x = 0
+            z = num_branches - 2
+            for stmt in node.orelse:
+                contr, x, y, z = parse_node(stmt, contr, x, y, z)
+            contr, x, y, z = add_pulsegiver_block(contr, x, y, z, *xyz)
         
         x, y, z = xyz
     

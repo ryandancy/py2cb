@@ -554,7 +554,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                     x += 1
                     contr.add_block((x, y, z), CommandBlock(
                         'scoreboard players operation {0} py2cb_var = {1}'
-                            .format(target, get_player_and_obj(node.value))
+                            .format(target.id, get_player_and_obj(node.value))
                     ))
             elif isinstance(target, ast.Subscript):
                 if not isinstance(target.value, ast.Name):

@@ -328,7 +328,7 @@ def setup_internal_values(node: ast.AST, contr: Contraption, x: int, y: int, z: 
         contr, x, y, z = add_const(node.n, contr, x, y, z)
     elif isinstance(node, ast.NameConstant):
         contr, x, y, z = add_const(nameconstant_to_int(node), contr, x, y, z)
-    elif not isinstance(node, ast.Name) and (True if redef else node in exprids):
+    elif not isinstance(node, ast.Name) and (True if redef else node not in exprids):
         contr, x, y, z = parse_node(node, contr, x, y, z)
         if node not in exprids:
             exprids.add(node)

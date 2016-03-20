@@ -424,7 +424,7 @@ def parse_kwargs(keywords: Sequence[ast.keyword], allowed: Sequence[Tuple[str, A
     allowed is Sequence[Tuple[name, default: allowable_type, Sequence[ast_subtype_literal]]]
     return type is Dict[str, allowable_type]
     """
-    allowed_names, allowed_types, defaults = zip(*allowed)
+    allowed_names, defaults, allowed_types = zip(*allowed)
     
     if len(keywords) > len(allowed):
         raise Exception('Only {0} keyword argument{1} ({2}) {3} allowed on {4}().'.format(

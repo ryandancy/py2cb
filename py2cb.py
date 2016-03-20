@@ -6,7 +6,7 @@ import ast
 import colorama
 
 from pynbt import NBTFile, TAG_Byte, TAG_Byte_Array, TAG_Compound, TAG_Int, TAG_List, TAG_Short, TAG_String
-from typing import Tuple, List, Dict, Any, Optional, Sequence
+from typing import Tuple, List, Dict, Any, Optional, Sequence, Callable, TypeVar
 from colorama import Fore, Style
 
 __author__ = 'Copper'
@@ -362,24 +362,27 @@ def add_pulsegiver_block(contr: Contraption, x: int, y: int, z: int,
     return contr, x, y, z
 
 
-def get_style_json(style: int) -> str:
+T = TypeVar('T')
+
+
+def parse_style_bitmap(style: int, callback: Callable[[str, Optional[int]], T]) -> List[T]:
     styles = []
     
     colour_id = style & COLOUR_MASK
-    styles.append('"color":"{0}"'.format(colours_to_mc[colour_id]))
+    styles.append(callback('color', colours_to_mc[colour_id]))
     
     if style & BOLD != 0:
-        styles.append('"bold":true')
+        styles.append(callback('bold', None))
     if style & ITALIC != 0:
-        styles.append('"italic":true')
+        styles.append(callback('italic', None))
     if style & UNDERLINED != 0:
-        styles.append('"underlined":true')
+        styles.append(callback('underlined', None))
     if style & STRIKETHROUGH != 0:
-        styles.append('"strikethrough":true')
+        styles.append(callback('strikethrough', None))
     if style & OBFUSCATED != 0:
-        styles.append('"obfuscated":true')
+        styles.append(callback('obfuscated', None))
     
-    return ','.join(styles)
+    return styles
 
 
 def get_json(node: ast.AST, style: Optional[int] = None) -> str:
@@ -400,7 +403,8 @@ def get_json(node: ast.AST, style: Optional[int] = None) -> str:
         raise Exception('Only nums/strs/true/false/names/expressions are allowed in tellraw/other JSON.')
     
     if style:
-        json += ',' + get_style_json(style)
+        json += ',' + ','.join(parse_style_bitmap(style, lambda name, value:
+                                                  '"{0}":{1}'.format(name, 'true' if value is None else value)))
     
     return '{' + json + '}'
 

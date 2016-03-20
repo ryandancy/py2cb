@@ -213,7 +213,7 @@ class Contraption:
                 'Command': TAG_String(cblock.command),
                 'auto': TAG_Byte(int(cblock.auto)),
                 # everything below here is the same for every cblock
-                'y': TAG_Int(1),
+                'y': TAG_Int(0),
                 'id': TAG_String('Control'),
                 'powered': TAG_Byte(0),
                 'conditionMet': TAG_Byte(0),

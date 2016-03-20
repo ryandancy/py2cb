@@ -387,7 +387,7 @@ def get_json(node: ast.AST, style: Optional[int] = None) -> str:
     elif isinstance(node, ast.NameConstant):
         json = '"score":{{"name":"const_{0}","objective":"py2cb_intrnl"}}'.format(nameconstant_to_int(node))
     elif isinstance(node, ast.Name):
-        if node in stringids:
+        if node.id in stringids:
             json = '"selector":"@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]"' \
                    .format(stringids[node.id])
         else:
@@ -1009,7 +1009,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
             for arg in node.args:
                 if isinstance(arg, ast.Str):
                     args.append(arg.s)
-                elif isinstance(arg, ast.Name) and arg in stringids:
+                elif isinstance(arg, ast.Name) and arg.id in stringids:
                     args.append('@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]'
                                 .format(stringids[arg.id]))
                 else:

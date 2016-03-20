@@ -203,7 +203,7 @@ class Contraption:
         data = [0] * (width * length)
         tiles = []
         for (x, z), cblock in self.cblocks:
-            index = (length + z) * width + x
+            index = z * width + x  # y is always 0, so (y * length + z) * width + x reduces to this
             blocks[index] = cblock.get_block_id()
             data[index] = cblock.metadata
             

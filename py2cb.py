@@ -262,10 +262,12 @@ class IDContainer:
             self._id_counter += 1
         return self._id_counter
     
-    def add(self, var: Any) -> None:
-        # Silently ignores adding multiple times
+    def add(self, var: Any, id_: Optional[int] = None) -> None:
+        # Silently ignore adding multiple times
         if var not in self._vars_to_ids:
-            self._vars_to_ids[var] = self._next_id()
+            if id_ is None:
+                id_ = self._next_id()
+            self._vars_to_ids[var] = id_
     
     def __getitem__(self, var: Any) -> int:
         return self._vars_to_ids[var]
@@ -778,13 +780,8 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
             
             left = right
         
-        exprids.add(node)
-        x += 1
         # noinspection PyUnboundLocalVariable
-        contr.add_block((x, y, z), CommandBlock(
-            'scoreboard players operation expr_{0} py2cb_intrnl = expr_{1} py2cb_intrnl'
-                .format(exprids[node], exprids[current])
-        ))
+        exprids.add(node, exprids[current])
     
     # SUBSCRIPTS
     elif isinstance(node, ast.Subscript):

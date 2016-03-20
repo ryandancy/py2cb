@@ -1094,7 +1094,7 @@ def get_ast(code: str, filename: str) -> ast.Module:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Compiles Python to Minecraft command blocks')
-    parser.add_argument('input_file', dest='infile', type=str, help='The Python file to be read.')
+    parser.add_argument('input_file', type=str, help='The Python file to be read.')
     
     output_group = parser.add_mutually_exclusive_group(required=True)
     output_group.add_argument(
@@ -1130,7 +1130,7 @@ def pretty_print(array: List[List[Any]]) -> str:
 if __name__ == '__main__':
     parsed_args = parse_args()
     
-    with open(parsed_args.infile) as infile:
+    with open(parsed_args.input_file) as infile:
         contraption = parse(get_ast(infile.read(), infile.name))
         
         if parsed_args.dumpfile:

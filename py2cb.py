@@ -893,6 +893,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         xyz = x, y, z
         x = 0
         z = num_branches - 1
+        old_z = z
         for stmt in node.body:
             contr, x, y, z = parse_node(stmt, contr, x, y, z)
         contr, x, y, z = setup_internal_values(node.test, contr, x, y, z, redef=True)
@@ -905,12 +906,12 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         contr.add_block((x, y, z), CommandBlock(
             'scoreboard players test {0} * -1'.format(get_player_and_obj(node.test))
         ))
-        contr, x, y, z = add_pulsegiver_block(contr, x, y, z)  # gives pulse to own branch
+        contr, x, y, z = add_pulsegiver_block(contr, x, y, z, 0, 0, old_z)  # gives pulse to own branch
         x += 1
         contr.add_block((x, y, z), CommandBlock(
             'scoreboard players test {0} 1 *'.format(get_player_and_obj(node.test))
         ))
-        contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
+        contr, x, y, z = add_pulsegiver_block(contr, x, y, z, 0, 0, old_z)
         
         x, y, z = xyz
     
@@ -947,6 +948,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         xyz = x, y, z
         x = 0
         z = num_branches - 1
+        old_z = z
         x += 1
         contr.add_block((x, y, z), CommandBlock(
             'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
@@ -979,7 +981,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
             'testfor @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0},score_py2cb_idxs=0,'
                 'score_py2cb_idxs_min=0]'.format(listids[node.iter.id])
         ))
-        contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
+        contr, x, y, z = add_pulsegiver_block(contr, x, y, z, 0, 0, old_z)
         x += 1
         contr.add_block((x, y, z), CommandBlock(
             'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '

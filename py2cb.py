@@ -538,7 +538,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                         ))
                         x += 1
                         contr.add_block((x, y, z), CommandBlock(
-                            'scoreboard players set @e[type=ArmorStand,tag=list_noname] py2cb_var {0}'
+                            'scoreboard players operation @e[type=ArmorStand,tag=list_noname] py2cb_var = {0}'
                                 .format(get_player_and_obj(elem))
                         ))
                         x += 1

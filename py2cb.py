@@ -933,7 +933,6 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
             'testfor @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0},score_py2cb_idxs=0,'
                        'score_py2cb_idxs_min=0]'.format(listids[node.iter.id])
         ))
-        x += 1
         num_branches += 1
         contr, x, z = add_pulsegiver_block(contr, x, z)
         x += 1

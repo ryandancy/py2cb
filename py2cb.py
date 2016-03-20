@@ -14,8 +14,15 @@ __author__ = 'Copper'
 colorama.init(autoreset=True)
 
 
-# ======= FUNCTIONS FOR SCRIPT USE ======= #
+# ======= STUFF FOR SCRIPT USE ======= #
 # This allows a valid script to be run in Python and behave the same (ish) as in Minecraft
+
+
+__all__ = [
+    'say', 'tell', 'tellraw', 'BLACK', 'DARK_BLUE', 'DARK_GREEN', 'DARK_AQUA', 'DARK_RED', 'GOLD', 'DARK_YELLOW',
+    'GRAY', 'GREY', 'DARK_GRAY', 'DARK_GREY', 'BLUE', 'GREEN', 'AQUA', 'RED', 'LIGHT_PURPLE', 'PURPLE', 'YELLOW',
+    'WHITE', 'BOLD', 'ITALIC', 'UNDERLINED', 'STRIKETHROUGH', 'OBFUSCATED'
+]
 
 
 def say(*args: Sequence[Any]) -> None:

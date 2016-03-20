@@ -520,7 +520,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 # Simple assignment - name = list (ex: n = [5, 6, 7])
                 # TODO Strings in lists
                 elif isinstance(node.value, ast.List):
-                    listids.add(target)
+                    listids.add(target.id)
                     for i, elem in enumerate(node.value.elts):
                         contr, x, y, z = setup_internal_values(elem, contr, x, y, z)
                         x += 1
@@ -530,7 +530,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                         x += 1
                         contr.add_block((x, y, z), CommandBlock(
                             'scoreboard players set @e[type=ArmorStand,tag=list_noname] py2cb_ids {0}'
-                                .format(listids[target])
+                                .format(listids[target.id])
                         ))
                         x += 1
                         contr.add_block((x, y, z), CommandBlock(
@@ -555,7 +555,10 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                             .format(target, get_player_and_obj(node.value))
                     ))
             elif isinstance(target, ast.Subscript):
-                if target.value not in listids:
+                if not isinstance(target.value, ast.Name):
+                    raise Exception('Only names can be subscripted at this time.')
+                
+                if target.value.id not in listids:
                     raise Exception('Cannot subscript a non-list.')
                 
                 if isinstance(target.slice, ast.Index):
@@ -566,7 +569,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                         contr.add_block((x, y, z), CommandBlock(
                             'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_idxs={0},'
                                 'score_py2cb_idxs_min={0},score_py2cb_ids={1},score_py2cb_ids_min={1}] py2cb_var = {2}'
-                                .format(target.slice.value.n, listids[target.value], get_player_and_obj(node.value))
+                                .format(target.slice.value.n, listids[target.value.id], get_player_and_obj(node.value))
                         ))
                     else:
                         contr, x, y, z = setup_internal_values(target.slice.value, contr, x, y, z)
@@ -575,19 +578,19 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                         contr.add_block((x, y, z), CommandBlock(
                             'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},'
                                 'score_py2cb_ids_min={0}] py2cb_idxs -= {1}'
-                                .format(listids[target.value], get_player_and_obj(target.slice.value))
+                                .format(listids[target.value.id], get_player_and_obj(target.slice.value))
                         ))
                         x += 1
                         contr.add_block((x, y, z), CommandBlock(
                             'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},'
                                 'score_py2cb_ids_min={0},score_py2cb_idxs=0,score_py2cb_idxs_min=0] py2cb_var = {1}'
-                                .format(listids[target.value], get_player_and_obj(node.value))
+                                .format(listids[target.value.id], get_player_and_obj(node.value))
                         ))
                         x += 1
                         contr.add_block((x, y, z), CommandBlock(
                             'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},'
                                 'score_py2cb_ids_min={0}] py2cb_idxs += {1}'
-                                .format(listids[target.value], get_player_and_obj(target.slice.value))
+                                .format(listids[target.value.id], get_player_and_obj(target.slice.value))
                         ))
                 else:
                     raise Exception('The only slice type supported is index (no colons allowed).')
@@ -786,7 +789,10 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
     # SUBSCRIPTS
     elif isinstance(node, ast.Subscript):
         if isinstance(node.slice, ast.Index):
-            if node.value not in listids:
+            if not isinstance(node.value, ast.Name):
+                raise Exception('Only names can be subscripted at this time, sorry.')
+            
+            if node.value.id not in listids:
                 raise Exception('Cannot subscript a non-list (the reference was most likely undefined).')
             
             contr, x, y, z = setup_internal_values(node.slice.value, contr, x, y, z)
@@ -797,26 +803,26 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
                 contr.add_block((x, y, z), CommandBlock(
                     'scoreboard players operation expr_{0} py2cb_intrnl = @e[type=ArmorStand,tag=list,'
                         'score_py2cb_idxs={1},score_py2cb_idxs_min={1},score_py2cb_ids={2},score_py2cb_min={2}] '
-                        'py2cb_var'.format(exprids[node], listids[node.value], node.slice.value.n)
+                        'py2cb_var'.format(exprids[node], listids[node.value.id], node.slice.value.n)
                 ))
             else:
                 x += 1
                 contr.add_block((x, y, z), CommandBlock(
                     'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},'
                         'score_py2cb_ids_min={0}] py2cb_idxs -= {1}'
-                        .format(listids[node.value], get_player_and_obj(node.slice.value))
+                        .format(listids[node.value.id], get_player_and_obj(node.slice.value))
                 ))
                 x += 1
                 contr.add_block((x, y, z), CommandBlock(
                     'scoreboard players operation expr_{0} py2cb_intrnl = @e[type=ArmorStand,tag=list,'
                         'score_py2cb_idxs=0,score_py2cb_idxs_min=0,score_py2cb_ids={1},score_py2cb_ids_min={1}] '
-                        'py2cb_var'.format(exprids[node], listids[node.value])
+                        'py2cb_var'.format(exprids[node], listids[node.value.id])
                 ))
                 x += 1
                 contr.add_block((x, y, z), CommandBlock(
                     'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_idxs=0,'
                         'score_py2cb_idxs_min=0,score_py2cb_ids={1},score_py2cb_ids_min={1}] py2cb_idxs += {0}'
-                        .format(get_player_and_obj(node.slice.value), listids[node.value])
+                        .format(get_player_and_obj(node.slice.value), listids[node.value.id])
                 ))
         else:
             raise Exception('The only slice type supported is index (no colons allowed).')
@@ -913,7 +919,10 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         if node.orelse:
             raise Exception('else statement on for loop is not supported.')
         
-        if node.iter not in listids:
+        if not isinstance(node.iter, ast.Name):
+            raise Exception('Only names can be iterated over. Try assigning your list to a name.')
+        
+        if node.iter.id not in listids:
             raise Exception('Cannot iterate over non-list.')
         
         if not isinstance(node.target, ast.Name):
@@ -926,7 +935,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         x += 1
         contr.add_block((x, y, z), CommandBlock(
             'testfor @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0},score_py2cb_idxs=0,'
-                       'score_py2cb_idxs_min=0]'.format(listids[node.iter])
+                       'score_py2cb_idxs_min=0]'.format(listids[node.iter.id])
         ))
         x += 1
         num_branches += 1
@@ -940,18 +949,18 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         x += 1
         contr.add_block((x, y, z), CommandBlock(
             'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
-                'py2cb_idxs -= cntr py2cb_intrnl'.format(listids[node.iter])
+                'py2cb_idxs -= cntr py2cb_intrnl'.format(listids[node.iter.id])
         ))
         x += 1
         contr.add_block((x, y, z), CommandBlock(
             'scoreboard players operation {0} py2cb_var = @e[type=ArmorStand,tag=list,score_py2cb_ids={1},'
                 'score_py2cb_ids_min={1},score_py2cb_idxs=0,score_py2cb_idxs_min=0] py2cb_var'
-                .format(node.target.id, listids[node.iter])
+                .format(node.target.id, listids[node.iter.id])
         ))
         x += 1
         contr.add_block((x, y, z), CommandBlock(
             'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
-                'py2cb_idxs += cntr py2cb_intrnl'.format(listids[node.iter])
+                'py2cb_idxs += cntr py2cb_intrnl'.format(listids[node.iter.id])
         ))
         
         for stmt in node.body:
@@ -962,18 +971,18 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, y: int, z: int) -> Tup
         x += 1
         contr.add_block((x, y, z), CommandBlock(
             'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
-                '-= cntr py2cb_intrnl'.format(listids[node.iter])
+                '-= cntr py2cb_intrnl'.format(listids[node.iter.id])
         ))
         x += 1
         contr.add_block((x, y, z), CommandBlock(
             'testfor @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0},score_py2cb_idxs=0,'
-                'score_py2cb_idxs_min=0]'.format(listids[node.iter])
+                'score_py2cb_idxs_min=0]'.format(listids[node.iter.id])
         ))
         contr, x, y, z = add_pulsegiver_block(contr, x, y, z)
         x += 1
         contr.add_block((x, y, z), CommandBlock(
             'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
-                '+= cntr py2cb_intrnl'.format(listids[node.iter])
+                '+= cntr py2cb_intrnl'.format(listids[node.iter.id])
         ))
         x += 1
         contr.add_block((x, y, z), CommandBlock('stats block ~-3 ~ ~ set SuccessCount forreturn py2cb_intrnl'))

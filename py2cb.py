@@ -385,6 +385,8 @@ def get_json(node: ast.AST, style: Optional[int] = None) -> str:
     """Assumes setup_internal_values has been called"""
     if isinstance(node, ast.Num):
         json = '"score":{{"name":"const_{0}","objective":"py2cb_intrnl"}}'.format(node.n)
+    elif isinstance(node, ast.Str):
+        json = '"text":"{0}"'.format(node.s)
     elif isinstance(node, ast.NameConstant):
         json = '"score":{{"name":"const_{0}","objective":"py2cb_intrnl"}}'.format(nameconstant_to_int(node))
     elif isinstance(node, ast.Name):

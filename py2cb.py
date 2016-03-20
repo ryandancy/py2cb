@@ -850,14 +850,14 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
         old_z = z
         for stmt in node.body:
             contr, x, z = parse_node(stmt, contr, x, z)
-        contr, x, z = add_pulsegiver_block(contr, x, z, *xz)
+        contr, x, z = add_pulsegiver_block(contr, x, z, *xz, conditional=False)
         
         # else body block
         x = 0
         z = old_z - 1
         for stmt in node.orelse:
             contr, x, z = parse_node(stmt, contr, x, z)
-        contr, x, z = add_pulsegiver_block(contr, x, z, *xz)
+        contr, x, z = add_pulsegiver_block(contr, x, z, *xz, conditional=False)
         
         x, z = xz
     

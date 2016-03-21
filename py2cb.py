@@ -978,7 +978,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
         ))
         x += 1
         contr.add_block((x, z), CommandBlock(
-            'scoreboard players set forreturn py2cb_intrnl 0', CommandBlock.EAST | CommandBlock.CONDITIONAL
+            'scoreboard players set forreturn py2cb_intrnl 0', metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
         ))
         contr, x, z = add_pulsegiver_block(contr, x, z, wz=old_z)
         x += 1

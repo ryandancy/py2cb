@@ -970,9 +970,15 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
                 'py2cb_idxs -= cntr py2cb_intrnl'.format(listids[node.iter.id])
         ))
         x += 1
+        contr.add_block((x, z), CommandBlock('scoreboard players set forreturn py2cb_intrnl 1'))
+        x += 1
         contr.add_block((x, z), CommandBlock(
             'testfor @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0},score_py2cb_idxs=0,'
                 'score_py2cb_idxs_min=0]'.format(listids[node.iter.id])
+        ))
+        x += 1
+        contr.add_block((x, z), CommandBlock(
+            'scoreboard players set forreturn py2cb_intrnl 0', CommandBlock.EAST | CommandBlock.CONDITIONAL
         ))
         contr, x, z = add_pulsegiver_block(contr, x, z, wz=old_z)
         x += 1
@@ -980,10 +986,6 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
             'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
                 'py2cb_idxs += cntr py2cb_intrnl'.format(listids[node.iter.id])
         ))
-        x += 1
-        contr.add_block((x, z), CommandBlock('scoreboard players set forreturn py2cb_intrnl -1'))
-        x += 1
-        contr.add_block((x, z), CommandBlock('stats block ~-4 ~ ~ set SuccessCount forreturn py2cb_intrnl'))
         x += 1
         contr.add_block((x, z), CommandBlock('scoreboard players test forreturn py2cb_intrnl 0 0'))
         contr, x, z = add_pulsegiver_block(contr, x, z, *xz)

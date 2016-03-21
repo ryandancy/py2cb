@@ -900,12 +900,12 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
         contr.add_block((x, z), CommandBlock(
             'scoreboard players test {0} * -1'.format(get_player_and_obj(node.test))
         ))
-        contr, x, z = add_pulsegiver_block(contr, x, z, 0, old_z)  # gives pulse to own branch
+        contr, x, z = add_pulsegiver_block(contr, x, z, wz=old_z)  # gives pulse to own branch
         x += 1
         contr.add_block((x, z), CommandBlock(
             'scoreboard players test {0} 1 *'.format(get_player_and_obj(node.test))
         ))
-        contr, x, z = add_pulsegiver_block(contr, x, z, 0, old_z)
+        contr, x, z = add_pulsegiver_block(contr, x, z, wz=old_z)
         
         x, z = xz
     
@@ -974,7 +974,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
             'testfor @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0},score_py2cb_idxs=0,'
                 'score_py2cb_idxs_min=0]'.format(listids[node.iter.id])
         ))
-        contr, x, z = add_pulsegiver_block(contr, x, z, 0, old_z)
+        contr, x, z = add_pulsegiver_block(contr, x, z, wz=old_z)
         x += 1
         contr.add_block((x, z), CommandBlock(
             'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '

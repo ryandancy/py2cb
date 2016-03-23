@@ -12,7 +12,6 @@ num = 1
 while num <= 50:
     loop = True
     n = num
-    res_add = ''
     while loop:
         if n == 0:
             loop = False
@@ -37,5 +36,6 @@ while num <= 50:
                         res_add = 'L'
                     n -= i
                     do_rest = False
+            # noinspection PyUnboundLocalVariable
             tellraw((res_add, BLUE))
     num += 1

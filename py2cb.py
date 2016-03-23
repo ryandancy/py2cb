@@ -488,6 +488,12 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
                 # Simple assignment - name = str (ex: n = 'foo')
                 elif isinstance(node.value, ast.Str):
                     # Strings are represented by armor stands with custom names
+                    stringids.add(target.id)
+                    x += 1
+                    contr.add_block((x, z), CommandBlock(
+                        'kill @e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]'
+                            .format(stringids[target.id])
+                    ))
                     x += 1
                     contr.add_block((x, z), CommandBlock(
                         'summon ArmorStand ~ ~1 ~ {{NoGravity:1b,CustomName:"{0}",Tags:["string_noname","py2cb"]}}'
@@ -495,7 +501,6 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
                     ))
                     
                     x += 1
-                    stringids.add(target.id)
                     contr.add_block((x, z), CommandBlock(
                         'scoreboard players set @e[type=ArmorStand,tag=string_noname] py2cb_var {0}'
                             .format(stringids[target.id])
@@ -520,6 +525,11 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
                     listids.add(target.id)
                     for i, elem in enumerate(node.value.elts):
                         contr, x, z = setup_internal_values(elem, contr, x, z)
+                        x += 1
+                        contr.add_block((x, z), CommandBlock(
+                            'kill @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0},'
+                                'score_py2cb_idxs={1},score_py2cb_idxs_min={1}'.format(listids[target.id], i)
+                        ))
                         x += 1
                         contr.add_block((x, z), CommandBlock(
                             'summon ArmorStand ~ ~1 ~ {NoGravity:1b,Tags:["list_noname","py2cb"]}'

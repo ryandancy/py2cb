@@ -344,7 +344,7 @@ def add_pulsegiver_block(contr: Contraption, x: int, z: int,
     if wx is None:
         offx = -x - 1
     else:
-        offx = wx - x
+        offx = wx - x - 1
     if wz is None:
         offz = num_branches - z - 1
     else:

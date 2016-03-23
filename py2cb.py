@@ -487,6 +487,12 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
                 
                 # Simple assignment - name = str (ex: n = 'foo')
                 elif isinstance(node.value, ast.Str):
+                    # Minecraft bug MC-78862 (https://bugs.mojang.com/browse/MC-78862) prevents entities being named ""
+                    if node.value.s == '':
+                        raise Exception('Due to Minecraft bug MC-78862, the empty string cannot be used in entity '
+                                        'names, which is how string variables are stored. Go vote for the bug at '
+                                        'https://bugs.mojang.com/browse/MC-78862.')
+                    
                     # Strings are represented by armor stands with custom names
                     stringids.add(target.id)
                     x += 1

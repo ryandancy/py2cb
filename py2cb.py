@@ -1004,7 +1004,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
                 'py2cb_idxs += cntr py2cb_intrnl'.format(listids[node.iter.id])
         ))
         x += 1
-        contr.add_block((x, z), CommandBlock('scoreboard players test forreturn py2cb_intrnl 0 0'))
+        contr.add_block((x, z), CommandBlock('scoreboard players test forreturn py2cb_intrnl 1 1'))
         contr, x, z = add_pulsegiver_block(contr, x, z, *xz)
         
         x, z = xz

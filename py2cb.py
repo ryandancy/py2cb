@@ -263,11 +263,10 @@ class IDContainer:
         return self._id_counter
     
     def add(self, var: Any, id_: Optional[int] = None) -> None:
-        # Silently ignore adding multiple times
-        if var not in self._vars_to_ids:
-            if id_ is None:
-                id_ = self._next_id()
-            self._vars_to_ids[var] = id_
+        # If var is added to multiple times it is silently overriden
+        if id_ is None:
+            id_ = self._next_id()
+        self._vars_to_ids[var] = id_
     
     def __getitem__(self, var: Any) -> int:
         return self._vars_to_ids[var]
@@ -495,7 +494,9 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
                                         'string variable to "". Sorry about that.')
                     
                     # Strings are represented by armor stands with custom names
-                    stringids.add(target.id)
+                    if target.id not in stringids:
+                        stringids.add(target.id)
+                    
                     x += 1
                     contr.add_block((x, z), CommandBlock(
                         'kill @e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]'
@@ -529,13 +530,15 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
                 # Simple assignment - name = list (ex: n = [5, 6, 7])
                 # TODO Strings in lists
                 elif isinstance(node.value, ast.List):
-                    listids.add(target.id)
+                    if target.id not in listids:
+                        listids.add(target.id)
+                    
                     for i, elem in enumerate(node.value.elts):
                         contr, x, z = setup_internal_values(elem, contr, x, z)
                         x += 1
                         contr.add_block((x, z), CommandBlock(
                             'kill @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0},'
-                                'score_py2cb_idxs={1},score_py2cb_idxs_min={1}'.format(listids[target.id], i)
+                                'score_py2cb_idxs={1},score_py2cb_idxs_min={1}]'.format(listids[target.id], i)
                         ))
                         x += 1
                         contr.add_block((x, z), CommandBlock(

@@ -1017,6 +1017,48 @@ def parse_function_call(node: ast.Call, contr: Contraption, x: int, z: int) -> T
             'tellraw {0} ["",{1}]'.format(to, ','.join(json_arg for json_arg in json_args))
         ))
     
+    # builtin - min()/max()
+    elif func_name in ('min', 'max'):
+        # We only support min/max of values, not min/max of an iterable
+        if node.keywords:
+            raise Exception('In Py2CB, {0}() takes no keyword arguments.'.format(func_name))
+        
+        if len(node.args) == 1:
+            exprids.add(node)
+            contr, x, z = setup_internal_values(node.args[0], contr, x, z)
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players operation expr_{0} py2cb_intrnl = {1}'
+                    .format(exprids[node], get_player_and_obj(node.args[0]))
+            ))
+            return contr, x, z
+        
+        for arg in node.args:
+            if arg in listids:
+                raise Exception('Py2CB\'s {0}() does not support {0} of an iterable.'.format(func_name))
+            contr, x, z = setup_internal_values(arg, contr, x, z)
+        
+        left = node.args[0]
+        for right in node.args[1:]:
+            current = ast.Call(func=ast.Name(id=func_name), args=[left, right], keywords=[])
+            exprids.add(current)
+            
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players operation expr_{0} py2cb_intrnl = {1}'
+                    .format(exprids[current], get_player_and_obj(left))
+            ))
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players operation expr_{0} py2cb_intrnl {2} {1}'
+                    .format(exprids[current], get_player_and_obj(right), {'min': '<', 'max': '>'}[func_name])
+            ))
+            
+            left = right
+
+        # noinspection PyUnboundLocalVariable
+        exprids.add(node, exprids[current])
+    
     # something else
     else:
         raise Exception('Unknown function name "{0}".'.format(func_name))

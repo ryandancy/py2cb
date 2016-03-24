@@ -29,10 +29,6 @@ def pretty_print(array: List[List[Any]]) -> str:
     return res
 
 
-if sys.stdout.isatty():
-    import colorama as colourama
-    colourama.init(autoreset=True)
-
 parser = argparse.ArgumentParser(description='Compiles Python to Minecraft command blocks')
 parser.add_argument('input_file', type=str, help='The Python file to be read.')
 

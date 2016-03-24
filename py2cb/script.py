@@ -1,14 +1,10 @@
 #!usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import colorama
-
 from typing import Sequence, Any, Optional, TypeVar, Callable, List
 from colorama import Fore, Style
 
 __author__ = 'Copper'
-
-colorama.init(autoreset=True)
 
 
 def say(*args: Sequence[Any]) -> None:

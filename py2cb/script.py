@@ -11,7 +11,7 @@ __author__ = 'Copper'
 
 
 if sys.stdout.isatty():
-    colourama.init(autoreset=True)
+    colourama.init()
 
 
 def say(*args: Sequence[Any]) -> None:
@@ -131,9 +131,9 @@ def tellraw(*args: Sequence[Any], to: Optional[str] = None) -> None:
     for arg in args:
         if isinstance(arg, tuple):
             print(''.join(parse_style_bitmap(arg[-1], lambda name, value: bitmap_to_ansi[value])), *arg[:-1],
-                  sep='', end='')
+                  sep='', end=Style.RESET_ALL)
         else:
-            print(arg, end='')
+            print(arg, end=Style.RESET_ALL)
     print()
 
 

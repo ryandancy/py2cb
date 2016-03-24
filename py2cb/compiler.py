@@ -1053,7 +1053,7 @@ def parse_function_call(node: ast.Call, contr: Contraption, x: int, z: int) -> T
     return contr, x, z
 
 
-def parse(ast_root: ast.Module) -> Contraption:
+def compile_ast(ast_root: ast.Module) -> Contraption:
     res = Contraption()
     x = z = 0
     res.add_block((x, z), CommandBlock('scoreboard objectives add py2cb_intrnl dummy Py2CB Internal Variables',
@@ -1072,5 +1072,6 @@ def parse(ast_root: ast.Module) -> Contraption:
     return res
 
 
-def get_ast(code: str, filename: str) -> ast.Module:
-    return ast.parse(code, filename=filename)
+def parse(filename: str) -> Contraption:
+    with open(filename) as infile:
+        return compile_ast(ast.parse(infile.read(), filename))

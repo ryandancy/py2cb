@@ -46,17 +46,16 @@ output_group.add_argument(
 
 parsed_args = parser.parse_args()
 
-with open(parsed_args.input_file) as infile:
-    contraption = compiler.parse(compiler.get_ast(infile.read(), infile.name))
-    
-    if parsed_args.output_file:
-        dump = contraption.get_dump()
-        with open(parsed_args.output_file, 'w') as dumpfile:
-            dumpfile.write(pretty_print(dump))
-    elif parsed_args.schematic_file:
-        import pynbt
-        with open(parsed_args.schematic_file, 'wb') as schemfile:
-            contraption.get_schematic().save(schemfile, compression=pynbt.NBTFile.Compression.GZIP)
-    else:
-        # This shouldn't happen, dumpfile & schemfile are mutually exclusive, required args...
-        raise Exception('Either a dump or schematic file must be specified.')
+contraption = compiler.parse(parsed_args.input_file)
+
+if parsed_args.output_file:
+    dump = contraption.get_dump()
+    with open(parsed_args.output_file, 'w') as dumpfile:
+        dumpfile.write(pretty_print(dump))
+elif parsed_args.schematic_file:
+    import pynbt
+    with open(parsed_args.schematic_file, 'wb') as schemfile:
+        contraption.get_schematic().save(schemfile, compression=pynbt.NBTFile.Compression.GZIP)
+else:
+    # This shouldn't happen, dumpfile & schemfile are mutually exclusive, required args...
+    raise Exception('Either a dump or schematic file must be specified.')

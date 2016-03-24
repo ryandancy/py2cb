@@ -952,7 +952,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
             
             x += 1
             contr.add_block((x, z), CommandBlock(
-                'tellraw {0} [{1}]'.format(to, ','.join(json_arg for json_arg in json_args))
+                'tellraw {0} ["",{1}]'.format(to, ','.join(json_arg for json_arg in json_args))
             ))
         
         # something else

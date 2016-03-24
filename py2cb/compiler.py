@@ -5,7 +5,7 @@ import ast
 import py2cb.script as script
 
 from pynbt import NBTFile, TAG_Byte, TAG_Byte_Array, TAG_Compound, TAG_Int, TAG_List, TAG_Short, TAG_String
-from typing import Tuple, List, Dict, Any, Optional, Sequence
+from typing import Tuple, List, Dict, Any, Optional, Sequence, Union
 
 __author__ = 'Copper'
 
@@ -340,71 +340,15 @@ def get_func_name(node: ast.Call) -> str:
         raise Exception('Illegal function call.')
 
 
+ast_to_parsers = {}
+
+
 def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
-    global num_branches
-    
-    # ASSIGNMENTS
-    if isinstance(node, ast.Assign):
-        contr, x, z = parse_assignment(node, contr, x, z)
-    
-    # AUGMENTED ASSIGNMENTS
-    elif isinstance(node, ast.AugAssign):
-        contr, x, z = parse_aug_assignment(node, contr, x, z)
-    
-    # BINOPS
-    elif isinstance(node, ast.BinOp):
-        contr, x, z = parse_binop(node, contr, x, z)
-    
-    # BOOLOPS
-    elif isinstance(node, ast.BoolOp):
-        contr, x, z = parse_boolop(node, contr, x, z)
-    
-    # UNARYOPS
-    elif isinstance(node, ast.UnaryOp):
-        contr, x, z = parse_unaryop(node, contr, x, z)
-    
-    # IFEXPS
-    elif isinstance(node, ast.IfExp):
-        contr, x, z = parse_ifexpr(node, contr, x, z)
-    
-    # COMPARES
-    elif isinstance(node, ast.Compare):
-        contr, x, z = parse_compare(node, contr, x, z)
-    
-    # SUBSCRIPTS
-    elif isinstance(node, ast.Subscript):
-        contr, x, z = parse_subscript(node, contr, x, z)
-    
-    # IF STATEMENTS
-    elif isinstance(node, ast.If):
-        contr, x, z = parse_if_statement(node, contr, x, z)
-    
-    # WHILE LOOPS
-    elif isinstance(node, ast.While):
-        contr, x, z = parse_while_loop(node, contr, x, z)
-    
-    # FOR LOOPS
-    elif isinstance(node, ast.For):
-        contr, x, z = parse_for_loop(node, contr, x, z)
-    
-    # BREAK/CONTINUE - not supported
-    elif type(node) in (ast.Break, ast.Continue):
-        raise Exception('break/continue are not supported.')
-    
-    # FUNCTION CALLS
-    elif isinstance(node, ast.Call):
-        contr, x, z = parse_function_call(node, contr, x, z)
-    
-    # BARE EXPRS
-    elif isinstance(node, ast.Expr):
-        contr, x, z = parse_node(node.value, contr, x, z)
-    
-    # PASS
-    elif isinstance(node, ast.Pass):
-        # Not technically necessary, but it's better to be explicit
-        pass
-    
-    return contr, x, z
+    try:
+        return ast_to_parsers[type(node)]()
+    except KeyError:
+        # Silently ignore things like pass, docstrings, etc
+        return contr, x, z
 
 
 def parse_assignment(node: ast.Assign, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
@@ -549,6 +493,7 @@ def parse_assignment(node: ast.Assign, contr: Contraption, x: int, z: int) -> Tu
             raise Exception('Only names and subscripts are supported as assignment targets.')
     
     return contr, x, z
+ast_to_parsers[ast.Assign] = parse_assignment
 
 
 def parse_aug_assignment(node: ast.AugAssign, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
@@ -563,6 +508,7 @@ def parse_aug_assignment(node: ast.AugAssign, contr: Contraption, x: int, z: int
         raise Exception('Only names are supported as assignment targets.')
     
     return contr, x, z
+ast_to_parsers[ast.AugAssign] = parse_aug_assignment
 
 
 def parse_binop(node: ast.BinOp, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
@@ -584,6 +530,7 @@ def parse_binop(node: ast.BinOp, contr: Contraption, x: int, z: int) -> Tuple[Co
         ))
     
     return contr, x, z
+ast_to_parsers[ast.BinOp] = parse_binop
 
 
 def parse_boolop(node: ast.BoolOp, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
@@ -629,6 +576,7 @@ def parse_boolop(node: ast.BoolOp, contr: Contraption, x: int, z: int) -> Tuple[
         ))
     
     return contr, x, z
+ast_to_parsers[ast.BoolOp] = parse_boolop
 
 
 def parse_unaryop(node: ast.UnaryOp, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
@@ -676,6 +624,7 @@ def parse_unaryop(node: ast.UnaryOp, contr: Contraption, x: int, z: int) -> Tupl
             ))
     
     return contr, x, z
+ast_to_parsers[ast.UnaryOp] = parse_unaryop
 
 
 def parse_ifexpr(node: ast.IfExp, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
@@ -699,6 +648,7 @@ def parse_ifexpr(node: ast.IfExp, contr: Contraption, x: int, z: int) -> Tuple[C
     ))
     
     return contr, x, z
+ast_to_parsers[ast.IfExp] = parse_ifexpr
 
 
 def parse_compare(node: ast.Compare, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
@@ -746,6 +696,7 @@ def parse_compare(node: ast.Compare, contr: Contraption, x: int, z: int) -> Tupl
     exprids.add(node, exprids[current])
     
     return contr, x, z
+ast_to_parsers[ast.Compare] = parse_compare
 
 
 def parse_subscript(node: ast.Subscript, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
@@ -789,6 +740,7 @@ def parse_subscript(node: ast.Subscript, contr: Contraption, x: int, z: int) -> 
         raise Exception('The only slice type supported is index (no colons allowed).')
     
     return contr, x, z
+ast_to_parsers[ast.Subscript] = parse_subscript
 
 
 def parse_if_statement(node: ast.If, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
@@ -837,6 +789,7 @@ def parse_if_statement(node: ast.If, contr: Contraption, x: int, z: int) -> Tupl
     x, z = xz
     
     return contr, x, z
+ast_to_parsers[ast.If] = parse_if_statement
 
 
 def parse_while_loop(node: ast.While, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
@@ -890,6 +843,7 @@ def parse_while_loop(node: ast.While, contr: Contraption, x: int, z: int) -> Tup
     x, z = xz
     
     return contr, x, z
+ast_to_parsers[ast.While] = parse_while_loop
 
 
 def parse_for_loop(node: ast.For, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
@@ -977,6 +931,15 @@ def parse_for_loop(node: ast.For, contr: Contraption, x: int, z: int) -> Tuple[C
     x, z = xz
     
     return contr, x, z
+ast_to_parsers[ast.For] = parse_for_loop
+
+
+# noinspection PyUnusedLocal
+def parse_break_or_continue(node: Union[ast.Break, ast.Continue], contr: Contraption, x: int, z: int) \
+        -> Tuple[Contraption, int, int]:
+    raise Exception('break/continue are not supported.')
+ast_to_parsers[ast.Break] = parse_break_or_continue
+ast_to_parsers[ast.Continue] = parse_break_or_continue
 
 
 def parse_function_call(node: ast.Call, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
@@ -1050,6 +1013,12 @@ def parse_function_call(node: ast.Call, contr: Contraption, x: int, z: int) -> T
         raise Exception('Unknown function name "{0}".'.format(func_name))
     
     return contr, x, z
+ast_to_parsers[ast.Call] = parse_function_call
+
+
+def parse_bare_expr(node: ast.Expr, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+    return parse_node(node.value, contr, x, z)
+ast_to_parsers[ast.Expr] = parse_bare_expr
 
 
 def compile_ast(ast_root: ast.Module) -> Contraption:

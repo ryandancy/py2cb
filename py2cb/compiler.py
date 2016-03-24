@@ -665,10 +665,13 @@ def parse_compare(node: ast.Compare, contr: Contraption, x: int, z: int) -> Tupl
     for operand in [node.left] + node.comparators:
         contr, x, z = setup_internal_values(operand, contr, x, z)
     
+    compare_exprids = []
+    
     left = node.left
     for op, right in zip(node.ops, node.comparators):
-        current = ast.Compare(left=left, ops=[op], comparators=[right])
+        current = (left, right)
         exprids.add(current)
+        compare_exprids.append(exprids[current])
         
         if type(op) in (ast.Eq, ast.NotEq, ast.Gt, ast.GtE, ast.Lt, ast.LtE):
             x += 1
@@ -701,6 +704,13 @@ def parse_compare(node: ast.Compare, contr: Contraption, x: int, z: int) -> Tupl
             raise Exception('Invalid comparison operation (only ==, !=, <, <=, >, and >= are allowed).')
         
         left = right
+    
+    if len(compare_exprids) > 1:
+        for leftid, rightid in zip(compare_exprids, compare_exprids[1:]):
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players operation expr_{0} py2cb_intrnl *= expr_{1} py2cb_intrnl'.format(rightid, leftid)
+            ))
     
     # noinspection PyUnboundLocalVariable
     exprids.add(node, exprids[current])

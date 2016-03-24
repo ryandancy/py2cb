@@ -346,543 +346,47 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
     
     # ASSIGNMENTS
     if isinstance(node, ast.Assign):
-        for target in node.targets:
-            # Assignment with names (n = _)
-            if isinstance(target, ast.Name):
-                # Simple assignment - name = num (ex: n = 4)
-                if isinstance(node.value, ast.Num):
-                    x += 1
-                    contr.add_block((x, z), CommandBlock(
-                        'scoreboard players set {0} py2cb_var {1}'.format(target.id, node.value.n)
-                    ))
-                
-                # Simple assignment - name = str (ex: n = 'foo')
-                elif isinstance(node.value, ast.Str):
-                    # A Minecraft limitation (bugfix for MC-78862) prevents entities being named ""
-                    # Auto-set to placeholder string???
-                    if node.value.s == '':
-                        raise Exception('Due to a Minecraft limitation, the empty string cannot be used in entity '
-                                        'names, which is how string variables are stored. Please don\'t assign your '
-                                        'string variable to "". Sorry about that.')
-                    
-                    # Strings are represented by armor stands with custom names
-                    if target.id not in stringids:
-                        stringids.add(target.id)
-                    
-                    x += 1
-                    contr.add_block((x, z), CommandBlock(
-                        'kill @e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]'
-                            .format(stringids[target.id])
-                    ))
-                    x += 1
-                    contr.add_block((x, z), CommandBlock(
-                        'summon ArmorStand ~ ~1 ~ {{NoGravity:1b,CustomName:"{0}",Tags:["string_noname","py2cb"]}}'
-                            .format(node.value.s)
-                    ))
-                    
-                    x += 1
-                    contr.add_block((x, z), CommandBlock(
-                        'scoreboard players set @e[type=ArmorStand,tag=string_noname] py2cb_var {0}'
-                            .format(stringids[target.id])
-                    ))
-                    
-                    x += 1
-                    contr.add_block((x, z), CommandBlock(
-                        'entitydata @e[type=ArmorStand,tag=string_noname] {Tags:["string","py2cb"]}'
-                    ))
-                
-                # Simple assignment - name = True/False/None (ex: n = True)
-                elif isinstance(node.value, ast.NameConstant):
-                    x += 1
-                    contr.add_block((x, z), CommandBlock(
-                        'scoreboard players set {0} py2cb_var {1}'
-                            .format(target.id, nameconstant_to_int(node.value))
-                    ))
-                
-                # Simple assignment - name = list (ex: n = [5, 6, 7])
-                # TODO Strings in lists
-                elif isinstance(node.value, ast.List):
-                    if target.id not in listids:
-                        listids.add(target.id)
-                    
-                    for i, elem in enumerate(node.value.elts):
-                        contr, x, z = setup_internal_values(elem, contr, x, z)
-                        x += 1
-                        contr.add_block((x, z), CommandBlock(
-                            'kill @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0},'
-                                'score_py2cb_idxs={1},score_py2cb_idxs_min={1}]'.format(listids[target.id], i)
-                        ))
-                        x += 1
-                        contr.add_block((x, z), CommandBlock(
-                            'summon ArmorStand ~ ~1 ~ {NoGravity:1b,Tags:["list_noname","py2cb"]}'
-                        ))
-                        x += 1
-                        contr.add_block((x, z), CommandBlock(
-                            'scoreboard players set @e[type=ArmorStand,tag=list_noname] py2cb_ids {0}'
-                                .format(listids[target.id])
-                        ))
-                        x += 1
-                        contr.add_block((x, z), CommandBlock(
-                            'scoreboard players set @e[type=ArmorStand,tag=list_noname] py2cb_idxs {0}'.format(i)
-                        ))
-                        x += 1
-                        contr.add_block((x, z), CommandBlock(
-                            'scoreboard players operation @e[type=ArmorStand,tag=list_noname] py2cb_var = {0}'
-                                .format(get_player_and_obj(elem))
-                        ))
-                        x += 1
-                        contr.add_block((x, z), CommandBlock(
-                            'entitydata @e[type=ArmorStand,tag=list_noname] {Tags:["list","py2cb"]}'
-                        ))
-                
-                # Not-so-simple assignment - name = expr-or-something (ex: n = 2 * 3)
-                else:
-                    contr, x, z = setup_internal_values(node.value, contr, x, z)
-                    x += 1
-                    contr.add_block((x, z), CommandBlock(
-                        'scoreboard players operation {0} py2cb_var = {1}'
-                            .format(target.id, get_player_and_obj(node.value))
-                    ))
-            elif isinstance(target, ast.Subscript):
-                if not isinstance(target.value, ast.Name):
-                    raise Exception('Only names can be subscripted at this time.')
-                
-                if target.value.id not in listids:
-                    raise Exception('Cannot subscript a non-list.')
-                
-                if isinstance(target.slice, ast.Index):
-                    contr, x, z = setup_internal_values(node.value, contr, x, z)
-                    
-                    if isinstance(target.slice.value, ast.Num):
-                        x += 1
-                        contr.add_block((x, z), CommandBlock(
-                            'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_idxs={0},'
-                                'score_py2cb_idxs_min={0},score_py2cb_ids={1},score_py2cb_ids_min={1}] py2cb_var = {2}'
-                                .format(target.slice.value.n, listids[target.value.id], get_player_and_obj(node.value))
-                        ))
-                    else:
-                        contr, x, z = setup_internal_values(target.slice.value, contr, x, z)
-                        
-                        x += 1
-                        contr.add_block((x, z), CommandBlock(
-                            'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},'
-                                'score_py2cb_ids_min={0}] py2cb_idxs -= {1}'
-                                .format(listids[target.value.id], get_player_and_obj(target.slice.value))
-                        ))
-                        x += 1
-                        contr.add_block((x, z), CommandBlock(
-                            'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},'
-                                'score_py2cb_ids_min={0},score_py2cb_idxs=0,score_py2cb_idxs_min=0] py2cb_var = {1}'
-                                .format(listids[target.value.id], get_player_and_obj(node.value))
-                        ))
-                        x += 1
-                        contr.add_block((x, z), CommandBlock(
-                            'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},'
-                                'score_py2cb_ids_min={0}] py2cb_idxs += {1}'
-                                .format(listids[target.value.id], get_player_and_obj(target.slice.value))
-                        ))
-                else:
-                    raise Exception('The only slice type supported is index (no colons allowed).')
-            else:
-                raise Exception('Only names and subscripts are supported as assignment targets.')
+        contr, x, z = parse_assignment(node, contr, x, z)
     
     # AUGMENTED ASSIGNMENTS
     elif isinstance(node, ast.AugAssign):
-        if isinstance(node.target, ast.Name):
-            contr, x, z = setup_internal_values(node.value, contr, x, z)
-            x += 1
-            contr.add_block((x, z), CommandBlock(
-                'scoreboard players operation {0} py2cb_var {2}= {1}'
-                    .format(node.target.id, get_player_and_obj(node.value), get_op_char(node.op))
-            ))
-        else:
-            raise Exception('Only names are supported as assignment targets.')
+        contr, x, z = parse_aug_assignment(node, contr, x, z)
     
     # BINOPS
     elif isinstance(node, ast.BinOp):
-        for side in [node.left, node.right]:
-            contr, x, z = setup_internal_values(side, contr, x, z)
-        
-        # <= is issubset operator on sets
-        if set(map(type, [node.left, node.right])) <= {ast.Num, ast.Name}:
-            x += 1
-            exprids.add(node)
-            contr.add_block((x, z), CommandBlock(
-                'scoreboard players operation expr_{0} py2cb_intrnl = {1}'
-                    .format(exprids[node], get_player_and_obj(node.left))
-            ))
-            x += 1
-            contr.add_block((x, z), CommandBlock(
-                'scoreboard players operation expr_{0} py2cb_intrnl {2}= {1}'
-                    .format(exprids[node], get_player_and_obj(node.right), get_op_char(node.op))
-            ))
+        contr, x, z = parse_binop(node, contr, x, z)
     
     # BOOLOPS
     elif isinstance(node, ast.BoolOp):
-        exprids.add(node)
-        if len(node.values) > 2:
-            prev = ast.BoolOp(op=node.op, values=node.values[:-1], lineno=0, col_offset=0)
-            contr, x, z = parse_node(prev, contr, x, z)
-            x += 1
-            contr.add_block((x, z), CommandBlock(
-                'scoreboard players operation expr_{0} py2cb_intrnl = expr_{1} py2cb_intrnl'
-                    .format(exprids[node], exprids[prev])
-            ))
-        else:
-            contr, x, z = setup_internal_values(node.values[0], contr, x, z)
-            
-            x += 1
-            contr.add_block((x, z), CommandBlock(
-                'scoreboard players operation expr_{0} py2cb_intrnl = {1}'
-                    .format(exprids[node], get_player_and_obj(node.values[0]))
-            ))
-        
-        contr, x, z = setup_internal_values(node.values[-1], contr, x, z)
-        
-        if isinstance(node.op, ast.And):
-            # a and b = a * b where a and b are both 0 or 1
-            x += 1
-            contr.add_block((x, z), CommandBlock(
-                'scoreboard players operation expr_{0} py2cb_intrnl *= {1}'
-                    .format(exprids[node], get_player_and_obj(node.values[-1]))
-            ))
-        else:  # isinstance(node.op, ast.Or) - it's the only other option
-            # a or b = min(a + b, 1) where a and b are both 0 or 1
-            contr, x, z = add_const(1, contr, x, z)
-            x += 1
-            contr.add_block((x, z), CommandBlock(
-                'scoreboard players operation expr_{0} py2cb_intrnl += {1}'
-                    .format(exprids[node], get_player_and_obj(node.values[-1]))
-            ))
-            x += 1
-            contr.add_block((x, z), CommandBlock(
-                'scoreboard players operation expr_{0} py2cb_intrnl < const_1 py2cb_intrnl'.format(exprids[node])
-            ))
+        contr, x, z = parse_boolop(node, contr, x, z)
     
     # UNARYOPS
     elif isinstance(node, ast.UnaryOp):
-        if isinstance(node.op, ast.UAdd):
-            contr, x, z = parse_node(node.operand, contr, x, z)
-        else:
-            contr, x, z = setup_internal_values(node.operand, contr, x, z)
-            exprids.add(node)
-            
-            if type(node.op) in (ast.USub, ast.Invert):
-                x += 1
-                contr.add_block((x, z), CommandBlock(
-                    'scoreboard players set temp py2cb_intrnl 0'
-                ))
-                x += 1
-                contr.add_block((x, z), CommandBlock(
-                    'scoreboard players operation temp py2cb_intrnl -= {0}'.format(get_player_and_obj(node.operand))
-                ))
-                x += 1
-                contr.add_block((x, z), CommandBlock(
-                    'scoreboard players operation expr_{0} = temp py2cb_intrnl'.format(exprids[node])
-                ))
-                
-                if isinstance(node.op, ast.Invert):
-                    contr, x, z = add_const(1, contr, x, z)
-                    contr.add_block((x, z), CommandBlock(
-                        'scoreboard players operation expr_{0} -= const_1 py2cb_intrnl'.format(exprids[node])
-                    ))
-            else:  # isinstance(node.op, ast.Not) - it's the only other option
-                # Pseudocode: temp = operand; operand = 0; if temp == 0: operand = 1
-                x += 1
-                contr.add_block((x, z), CommandBlock(
-                    'scoreboard players operation temp py2cb_intrnl = {0}'.format(get_player_and_obj(node.operand))
-                ))
-                x += 1
-                contr.add_block((x, z), CommandBlock(
-                    'scoreboard players set expr_{0} 0'.format(exprids[node])
-                ))
-                x += 1
-                contr.add_block((x, z), CommandBlock('scoreboard players test temp py2cb_intrnl 0 0'))
-                x += 1
-                contr.add_block((x, z), CommandBlock(
-                    'scoreboard players set expr_{0} 1'.format(exprids[node]),
-                    metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
-                ))
+        contr, x, z = parse_unaryop(node, contr, x, z)
     
     # IFEXPS
     elif isinstance(node, ast.IfExp):
-        # Pseudocode: res = body; if test == 0: res = orelse
-        for expr in [node.body, node.orelse, node.test]:
-            contr, x, z = setup_internal_values(expr, contr, x, z)
-        exprids.add(node)
-        
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players operation expr_{0} = {1}'.format(exprids[node], get_player_and_obj(node.body))
-        ))
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players test {0} 0 0'.format(get_player_and_obj(node.orelse))
-        ))
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players operation expr_{0} = {1}'.format(exprids[node], get_player_and_obj(node.orelse)),
-            metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
-        ))
+        contr, x, z = parse_ifexpr(node, contr, x, z)
     
     # COMPARES
     elif isinstance(node, ast.Compare):
-        for operand in [node.left] + node.comparators:
-            contr, x, z = setup_internal_values(operand, contr, x, z)
-        
-        left = node.left
-        for op, right in zip(node.ops, node.comparators):
-            current = ast.Compare(left=left, ops=[op], comparators=[right])
-            exprids.add(current)
-            
-            if type(op) in (ast.Eq, ast.NotEq, ast.Gt, ast.GtE, ast.Lt, ast.LtE):
-                x += 1
-                contr.add_block((x, z), CommandBlock(
-                    'scoreboard players operation temp py2cb_intrnl = {0}'.format(get_player_and_obj(left))
-                ))
-                x += 1
-                contr.add_block((x, z), CommandBlock(
-                    'scoreboard players operation temp py2cb_intrnl -= {0}'.format(get_player_and_obj(right))
-                ))
-                x += 1
-                contr.add_block((x, z), CommandBlock(
-                    'scoreboard players set expr_{0} py2cb_intrnl {1}'
-                        .format(exprids[current], int(isinstance(op, ast.NotEq)))
-                ))
-                x += 1
-                contr.add_block((x, z), CommandBlock(
-                    'scoreboard players test temp py2cb_intrnl {0} {1}'.format(
-                        {ast.Eq: 0, ast.NotEq: 0, ast.Gt: 1, ast.GtE: 0, ast.Lt: '*', ast.LtE: '*'}[type(op)],
-                        {ast.Eq: 0, ast.NotEq: 0, ast.Gt: '*', ast.GtE: '*', ast.Lt: -1, ast.LtE: 0}[type(op)]
-                    )
-                ))
-                x += 1
-                contr.add_block((x, z), CommandBlock(
-                    'scoreboard players set expr_{0} py2cb_intrnl {1}'
-                        .format(exprids[current], int(not isinstance(op, ast.NotEq))),
-                    metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
-                ))
-            else:
-                raise Exception('Invalid comparison operation (only ==, !=, <, <=, >, and >= are allowed).')
-            
-            left = right
-        
-        # noinspection PyUnboundLocalVariable
-        exprids.add(node, exprids[current])
+        contr, x, z = parse_compare(node, contr, x, z)
     
     # SUBSCRIPTS
     elif isinstance(node, ast.Subscript):
-        if isinstance(node.slice, ast.Index):
-            if not isinstance(node.value, ast.Name):
-                raise Exception('Only names can be subscripted at this time, sorry.')
-            
-            if node.value.id not in listids:
-                raise Exception('Cannot subscript a non-list (the reference was most likely undefined).')
-            
-            contr, x, z = setup_internal_values(node.slice.value, contr, x, z)
-            exprids.add(node)
-            
-            if isinstance(node.slice.value, ast.Num):
-                x += 1
-                contr.add_block((x, z), CommandBlock(
-                    'scoreboard players operation expr_{0} py2cb_intrnl = @e[type=ArmorStand,tag=list,'
-                        'score_py2cb_idxs={1},score_py2cb_idxs_min={1},score_py2cb_ids={2},score_py2cb_min={2}] '
-                        'py2cb_var'.format(exprids[node], listids[node.value.id], node.slice.value.n)
-                ))
-            else:
-                x += 1
-                contr.add_block((x, z), CommandBlock(
-                    'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},'
-                        'score_py2cb_ids_min={0}] py2cb_idxs -= {1}'
-                        .format(listids[node.value.id], get_player_and_obj(node.slice.value))
-                ))
-                x += 1
-                contr.add_block((x, z), CommandBlock(
-                    'scoreboard players operation expr_{0} py2cb_intrnl = @e[type=ArmorStand,tag=list,'
-                        'score_py2cb_idxs=0,score_py2cb_idxs_min=0,score_py2cb_ids={1},score_py2cb_ids_min={1}] '
-                        'py2cb_var'.format(exprids[node], listids[node.value.id])
-                ))
-                x += 1
-                contr.add_block((x, z), CommandBlock(
-                    'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_idxs=0,'
-                        'score_py2cb_idxs_min=0,score_py2cb_ids={1},score_py2cb_ids_min={1}] py2cb_idxs += {0}'
-                        .format(get_player_and_obj(node.slice.value), listids[node.value.id])
-                ))
-        else:
-            raise Exception('The only slice type supported is index (no colons allowed).')
+        contr, x, z = parse_subscript(node, contr, x, z)
     
     # IF STATEMENTS
     elif isinstance(node, ast.If):
-        contr, x, z = setup_internal_values(node.test, contr, x, z)
-        
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players test {0} 0 0'.format(get_player_and_obj(node.test))
-        ))
-        num_branches += 1
-        contr, x, z = add_pulsegiver_block(contr, x, z)
-        
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players test {0} * -1'.format(get_player_and_obj(node.test))
-        ))
-        num_branches += 1
-        contr, x, z = add_pulsegiver_block(contr, x, z)
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players test {0} 1 *'.format(get_player_and_obj(node.test))
-        ))
-        contr, x, z = add_pulsegiver_block(contr, x, z)
-        x += 1
-        
-        # if body block
-        xz = x, z
-        x = 0
-        z = num_branches - 1
-        old_z = z
-        for stmt in node.body:
-            contr, x, z = parse_node(stmt, contr, x, z)
-        contr, x, z = add_pulsegiver_block(contr, x, z, *xz, conditional=False)
-        
-        # else body block
-        x = 0
-        z = old_z - 1
-        for stmt in node.orelse:
-            contr, x, z = parse_node(stmt, contr, x, z)
-        contr, x, z = add_pulsegiver_block(contr, x, z, *xz, conditional=False)
-        
-        x, z = xz
+        contr, x, z = parse_if_statement(node, contr, x, z)
     
     # WHILE LOOPS
     elif isinstance(node, ast.While):
-        # There's an if statement to go to the while loop, and one at the end of the while loop
-        # 'else' on while loops/break/continue unsupported
-        if node.orelse:
-            raise Exception('else statement on while loop is not supported')
-        
-        contr, x, z = setup_internal_values(node.test, contr, x, z)
-        
-        x += 1
-        num_branches += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players test {0} * -1'.format(get_player_and_obj(node.test))
-        ))
-        contr, x, z = add_pulsegiver_block(contr, x, z)
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players test {0} 1 *'.format(get_player_and_obj(node.test))
-        ))
-        contr, x, z = add_pulsegiver_block(contr, x, z)
-        x += 1
-        
-        # while body branch
-        xz = x, z
-        x = 0
-        z = num_branches - 1
-        old_z = z
-        for stmt in node.body:
-            contr, x, z = parse_node(stmt, contr, x, z)
-        contr, x, z = setup_internal_values(node.test, contr, x, z, redef=True)
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players test {0} 0 0'.format(get_player_and_obj(node.test))
-        ))
-        contr, x, z = add_pulsegiver_block(contr, x, z, *xz)  # gives control back to while caller
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players test {0} * -1'.format(get_player_and_obj(node.test))
-        ))
-        contr, x, z = add_pulsegiver_block(contr, x, z, wz=old_z)  # gives pulse to own branch
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players test {0} 1 *'.format(get_player_and_obj(node.test))
-        ))
-        contr, x, z = add_pulsegiver_block(contr, x, z, wz=old_z)
-        
-        x, z = xz
+        contr, x, z = parse_while_loop(node, contr, x, z)
     
     # FOR LOOPS
     elif isinstance(node, ast.For):
-        # 'else' on for loops is unsupported
-        if node.orelse:
-            raise Exception('else statement on for loop is not supported.')
-        
-        if not isinstance(node.iter, ast.Name):
-            raise Exception('Only names can be iterated over. Try assigning your list to a name.')
-        
-        if node.iter.id not in listids:
-            raise Exception('Cannot iterate over non-list.')
-        
-        if not isinstance(node.target, ast.Name):
-            raise Exception('Only names can be iterator variables.')
-        
-        x += 1
-        contr.add_block((x, z), CommandBlock('scoreboard players set cntr py2cb_intrnl 0'))
-        
-        # If the iterator's not empty (has a 0th element), jump to the for body branch
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'testfor @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0},score_py2cb_idxs=0,'
-                       'score_py2cb_idxs_min=0]'.format(listids[node.iter.id])
-        ))
-        num_branches += 1
-        contr, x, z = add_pulsegiver_block(contr, x, z)
-        x += 1
-        
-        # for body branch
-        xz = x, z
-        x = 0
-        z = num_branches - 1
-        old_z = z
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
-                'py2cb_idxs -= cntr py2cb_intrnl'.format(listids[node.iter.id])
-        ))
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players operation {0} py2cb_var = @e[type=ArmorStand,tag=list,score_py2cb_ids={1},'
-                'score_py2cb_ids_min={1},score_py2cb_idxs=0,score_py2cb_idxs_min=0] py2cb_var'
-                .format(node.target.id, listids[node.iter.id])
-        ))
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
-                'py2cb_idxs += cntr py2cb_intrnl'.format(listids[node.iter.id])
-        ))
-        
-        for stmt in node.body:
-            contr, x, z = parse_node(stmt, contr, x, z)
-        
-        x += 1
-        contr.add_block((x, z), CommandBlock('scoreboard players add cntr py2cb_intrnl 1'))
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
-                'py2cb_idxs -= cntr py2cb_intrnl'.format(listids[node.iter.id])
-        ))
-        x += 1
-        contr.add_block((x, z), CommandBlock('scoreboard players set forreturn py2cb_intrnl 1'))
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'testfor @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0},score_py2cb_idxs=0,'
-                'score_py2cb_idxs_min=0]'.format(listids[node.iter.id])
-        ))
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players set forreturn py2cb_intrnl 0', metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
-        ))
-        contr, x, z = add_pulsegiver_block(contr, x, z, wz=old_z)
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
-                'py2cb_idxs += cntr py2cb_intrnl'.format(listids[node.iter.id])
-        ))
-        x += 1
-        contr.add_block((x, z), CommandBlock('scoreboard players test forreturn py2cb_intrnl 1 1'))
-        contr, x, z = add_pulsegiver_block(contr, x, z, *xz)
-        
-        x, z = xz
+        contr, x, z = parse_for_loop(node, contr, x, z)
     
     # BREAK/CONTINUE - not supported
     elif type(node) in (ast.Break, ast.Continue):
@@ -890,74 +394,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
     
     # FUNCTION CALLS
     elif isinstance(node, ast.Call):
-        func_name = get_func_name(node)
-        
-        # say()
-        if func_name == 'say':
-            if len(node.keywords):
-                raise Exception('say() takes no keyword arguments.')
-            
-            args = []
-            for arg in node.args:
-                if isinstance(arg, ast.Str):
-                    args.append(arg.s)
-                elif isinstance(arg, ast.Name) and arg.id in stringids:
-                    args.append('@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]'
-                                .format(stringids[arg.id]))
-                else:
-                    raise Exception('Only literal strings and names naming strings are supported in say(). '
-                                    'Use tellraw() for better support.')
-            
-            x += 1
-            contr.add_block((x, z), CommandBlock('say {0}'.format(''.join(args))))
-        
-        # tell()
-        elif func_name == 'tell':
-            to = parse_kwargs(node.keywords, [('to', ast.Str('@a'), [ast.Str])], 'tell')['to'].s
-            
-            # This is also repeated, from say()...
-            args = []
-            for arg in node.args:
-                if isinstance(arg, ast.Str):
-                    args.append(arg.s)
-                elif isinstance(arg, ast.Name) and arg in stringids:
-                    args.append('@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]'
-                                .format(stringids[arg.id]))
-                else:
-                    raise Exception('Only literal strings and names naming strings are supported in say(). '
-                                    'Use tellraw() for better support.')
-            
-            x += 1
-            contr.add_block((x, z), CommandBlock('tell {0} {1}'.format(to, ''.join(args))))
-        
-        # tellraw()
-        elif func_name == 'tellraw':
-            to = parse_kwargs(node.keywords, [('to', ast.Str('@a'), [ast.Str])], 'tellraw')['to'].s
-            
-            # Each arg is either a raw value, in which case there is no styling applied, or a tuple of raw values
-            # + a bitmap style, from the constants above OR'd together
-            json_args = []
-            for arg in node.args:
-                if isinstance(arg, ast.Tuple):
-                    if not is_bitmap_safe(arg.elts[-1]):
-                        raise Exception('Malformed style in tellraw().')
-                    style = eval(compile(ast.Expression(arg.elts[-1]), '', 'eval'), script.colours_and_styles)
-                    
-                    for elem in arg.elts[:-1]:
-                        contr, x, z = setup_internal_values(elem, contr, x, z)
-                        json_args.append(get_json(elem, style))
-                else:
-                    contr, x, z = setup_internal_values(arg, contr, x, z)
-                    json_args.append(get_json(arg))
-            
-            x += 1
-            contr.add_block((x, z), CommandBlock(
-                'tellraw {0} ["",{1}]'.format(to, ','.join(json_arg for json_arg in json_args))
-            ))
-        
-        # something else
-        else:
-            raise Exception('Unknown function name "{0}".'.format(func_name))
+        contr, x, z = parse_function_call(node, contr, x, z)
     
     # BARE EXPRS
     elif isinstance(node, ast.Expr):
@@ -967,6 +404,651 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
     elif isinstance(node, ast.Pass):
         # Not technically necessary, but it's better to be explicit
         pass
+    
+    return contr, x, z
+
+
+def parse_assignment(node: ast.Assign, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+    for target in node.targets:
+        # Assignment with names (n = _)
+        if isinstance(target, ast.Name):
+            # Simple assignment - name = num (ex: n = 4)
+            if isinstance(node.value, ast.Num):
+                x += 1
+                contr.add_block((x, z), CommandBlock(
+                    'scoreboard players set {0} py2cb_var {1}'.format(target.id, node.value.n)
+                ))
+            
+            # Simple assignment - name = str (ex: n = 'foo')
+            elif isinstance(node.value, ast.Str):
+                # A Minecraft limitation (bugfix for MC-78862) prevents entities being named ""
+                # Auto-set to placeholder string???
+                if node.value.s == '':
+                    raise Exception('Due to a Minecraft limitation, the empty string cannot be used in entity '
+                                    'names, which is how string variables are stored. Please don\'t assign your '
+                                    'string variable to "". Sorry about that.')
+                
+                # Strings are represented by armor stands with custom names
+                if target.id not in stringids:
+                    stringids.add(target.id)
+                
+                x += 1
+                contr.add_block((x, z), CommandBlock(
+                    'kill @e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]'
+                        .format(stringids[target.id])
+                ))
+                x += 1
+                contr.add_block((x, z), CommandBlock(
+                    'summon ArmorStand ~ ~1 ~ {{NoGravity:1b,CustomName:"{0}",Tags:["string_noname","py2cb"]}}'
+                        .format(node.value.s)
+                ))
+                
+                x += 1
+                contr.add_block((x, z), CommandBlock(
+                    'scoreboard players set @e[type=ArmorStand,tag=string_noname] py2cb_var {0}'
+                        .format(stringids[target.id])
+                ))
+                
+                x += 1
+                contr.add_block((x, z), CommandBlock(
+                    'entitydata @e[type=ArmorStand,tag=string_noname] {Tags:["string","py2cb"]}'
+                ))
+            
+            # Simple assignment - name = True/False/None (ex: n = True)
+            elif isinstance(node.value, ast.NameConstant):
+                x += 1
+                contr.add_block((x, z), CommandBlock(
+                    'scoreboard players set {0} py2cb_var {1}'
+                        .format(target.id, nameconstant_to_int(node.value))
+                ))
+            
+            # Simple assignment - name = list (ex: n = [5, 6, 7])
+            # TODO Strings in lists
+            elif isinstance(node.value, ast.List):
+                if target.id not in listids:
+                    listids.add(target.id)
+                
+                for i, elem in enumerate(node.value.elts):
+                    contr, x, z = setup_internal_values(elem, contr, x, z)
+                    x += 1
+                    contr.add_block((x, z), CommandBlock(
+                        'kill @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0},'
+                        'score_py2cb_idxs={1},score_py2cb_idxs_min={1}]'.format(listids[target.id], i)
+                    ))
+                    x += 1
+                    contr.add_block((x, z), CommandBlock(
+                        'summon ArmorStand ~ ~1 ~ {NoGravity:1b,Tags:["list_noname","py2cb"]}'
+                    ))
+                    x += 1
+                    contr.add_block((x, z), CommandBlock(
+                        'scoreboard players set @e[type=ArmorStand,tag=list_noname] py2cb_ids {0}'
+                            .format(listids[target.id])
+                    ))
+                    x += 1
+                    contr.add_block((x, z), CommandBlock(
+                        'scoreboard players set @e[type=ArmorStand,tag=list_noname] py2cb_idxs {0}'.format(i)
+                    ))
+                    x += 1
+                    contr.add_block((x, z), CommandBlock(
+                        'scoreboard players operation @e[type=ArmorStand,tag=list_noname] py2cb_var = {0}'
+                            .format(get_player_and_obj(elem))
+                    ))
+                    x += 1
+                    contr.add_block((x, z), CommandBlock(
+                        'entitydata @e[type=ArmorStand,tag=list_noname] {Tags:["list","py2cb"]}'
+                    ))
+            
+            # Not-so-simple assignment - name = expr-or-something (ex: n = 2 * 3)
+            else:
+                contr, x, z = setup_internal_values(node.value, contr, x, z)
+                x += 1
+                contr.add_block((x, z), CommandBlock(
+                    'scoreboard players operation {0} py2cb_var = {1}'
+                        .format(target.id, get_player_and_obj(node.value))
+                ))
+        elif isinstance(target, ast.Subscript):
+            if not isinstance(target.value, ast.Name):
+                raise Exception('Only names can be subscripted at this time.')
+            
+            if target.value.id not in listids:
+                raise Exception('Cannot subscript a non-list.')
+            
+            if isinstance(target.slice, ast.Index):
+                contr, x, z = setup_internal_values(node.value, contr, x, z)
+                
+                if isinstance(target.slice.value, ast.Num):
+                    x += 1
+                    contr.add_block((x, z), CommandBlock(
+                        'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_idxs={0},'
+                        'score_py2cb_idxs_min={0},score_py2cb_ids={1},score_py2cb_ids_min={1}] py2cb_var = {2}'
+                            .format(target.slice.value.n, listids[target.value.id], get_player_and_obj(node.value))
+                    ))
+                else:
+                    contr, x, z = setup_internal_values(target.slice.value, contr, x, z)
+                    
+                    x += 1
+                    contr.add_block((x, z), CommandBlock(
+                        'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},'
+                        'score_py2cb_ids_min={0}] py2cb_idxs -= {1}'
+                            .format(listids[target.value.id], get_player_and_obj(target.slice.value))
+                    ))
+                    x += 1
+                    contr.add_block((x, z), CommandBlock(
+                        'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},'
+                        'score_py2cb_ids_min={0},score_py2cb_idxs=0,score_py2cb_idxs_min=0] py2cb_var = {1}'
+                            .format(listids[target.value.id], get_player_and_obj(node.value))
+                    ))
+                    x += 1
+                    contr.add_block((x, z), CommandBlock(
+                        'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},'
+                        'score_py2cb_ids_min={0}] py2cb_idxs += {1}'
+                            .format(listids[target.value.id], get_player_and_obj(target.slice.value))
+                    ))
+            else:
+                raise Exception('The only slice type supported is index (no colons allowed).')
+        else:
+            raise Exception('Only names and subscripts are supported as assignment targets.')
+    
+    return contr, x, z
+
+
+def parse_aug_assignment(node: ast.AugAssign, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+    if isinstance(node.target, ast.Name):
+        contr, x, z = setup_internal_values(node.value, contr, x, z)
+        x += 1
+        contr.add_block((x, z), CommandBlock(
+            'scoreboard players operation {0} py2cb_var {2}= {1}'
+                .format(node.target.id, get_player_and_obj(node.value), get_op_char(node.op))
+        ))
+    else:
+        raise Exception('Only names are supported as assignment targets.')
+    
+    return contr, x, z
+
+
+def parse_binop(node: ast.BinOp, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+    for side in [node.left, node.right]:
+        contr, x, z = setup_internal_values(side, contr, x, z)
+    
+    # <= is issubset operator on sets
+    if set(map(type, [node.left, node.right])) <= {ast.Num, ast.Name}:
+        x += 1
+        exprids.add(node)
+        contr.add_block((x, z), CommandBlock(
+            'scoreboard players operation expr_{0} py2cb_intrnl = {1}'
+                .format(exprids[node], get_player_and_obj(node.left))
+        ))
+        x += 1
+        contr.add_block((x, z), CommandBlock(
+            'scoreboard players operation expr_{0} py2cb_intrnl {2}= {1}'
+                .format(exprids[node], get_player_and_obj(node.right), get_op_char(node.op))
+        ))
+    
+    return contr, x, z
+
+
+def parse_boolop(node: ast.BoolOp, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+    exprids.add(node)
+    
+    if len(node.values) > 2:
+        prev = ast.BoolOp(op=node.op, values=node.values[:-1], lineno=0, col_offset=0)
+        contr, x, z = parse_node(prev, contr, x, z)
+        x += 1
+        contr.add_block((x, z), CommandBlock(
+            'scoreboard players operation expr_{0} py2cb_intrnl = expr_{1} py2cb_intrnl'
+                .format(exprids[node], exprids[prev])
+        ))
+    else:
+        contr, x, z = setup_internal_values(node.values[0], contr, x, z)
+        
+        x += 1
+        contr.add_block((x, z), CommandBlock(
+            'scoreboard players operation expr_{0} py2cb_intrnl = {1}'
+                .format(exprids[node], get_player_and_obj(node.values[0]))
+        ))
+    
+    contr, x, z = setup_internal_values(node.values[-1], contr, x, z)
+    
+    if isinstance(node.op, ast.And):
+        # a and b = a * b where a and b are both 0 or 1
+        x += 1
+        contr.add_block((x, z), CommandBlock(
+            'scoreboard players operation expr_{0} py2cb_intrnl *= {1}'
+                .format(exprids[node], get_player_and_obj(node.values[-1]))
+        ))
+    else:  # isinstance(node.op, ast.Or) - it's the only other option
+        # a or b = min(a + b, 1) where a and b are both 0 or 1
+        contr, x, z = add_const(1, contr, x, z)
+        x += 1
+        contr.add_block((x, z), CommandBlock(
+            'scoreboard players operation expr_{0} py2cb_intrnl += {1}'
+                .format(exprids[node], get_player_and_obj(node.values[-1]))
+        ))
+        x += 1
+        contr.add_block((x, z), CommandBlock(
+            'scoreboard players operation expr_{0} py2cb_intrnl < const_1 py2cb_intrnl'.format(exprids[node])
+        ))
+    
+    return contr, x, z
+
+
+def parse_unaryop(node: ast.UnaryOp, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+    if isinstance(node.op, ast.UAdd):
+        contr, x, z = parse_node(node.operand, contr, x, z)
+    else:
+        contr, x, z = setup_internal_values(node.operand, contr, x, z)
+        exprids.add(node)
+        
+        if type(node.op) in (ast.USub, ast.Invert):
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players set temp py2cb_intrnl 0'
+            ))
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players operation temp py2cb_intrnl -= {0}'.format(get_player_and_obj(node.operand))
+            ))
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players operation expr_{0} = temp py2cb_intrnl'.format(exprids[node])
+            ))
+            
+            if isinstance(node.op, ast.Invert):
+                contr, x, z = add_const(1, contr, x, z)
+                contr.add_block((x, z), CommandBlock(
+                    'scoreboard players operation expr_{0} -= const_1 py2cb_intrnl'.format(exprids[node])
+                ))
+        else:  # isinstance(node.op, ast.Not) - it's the only other option
+            # Pseudocode: temp = operand; operand = 0; if temp == 0: operand = 1
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players operation temp py2cb_intrnl = {0}'.format(get_player_and_obj(node.operand))
+            ))
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players set expr_{0} 0'.format(exprids[node])
+            ))
+            x += 1
+            contr.add_block((x, z), CommandBlock('scoreboard players test temp py2cb_intrnl 0 0'))
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players set expr_{0} 1'.format(exprids[node]),
+                metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
+            ))
+    
+    return contr, x, z
+
+
+def parse_ifexpr(node: ast.IfExp, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+    # Pseudocode: res = body; if test == 0: res = orelse
+    for expr in [node.body, node.orelse, node.test]:
+        contr, x, z = setup_internal_values(expr, contr, x, z)
+    
+    exprids.add(node)
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players operation expr_{0} = {1}'.format(exprids[node], get_player_and_obj(node.body))
+    ))
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players test {0} 0 0'.format(get_player_and_obj(node.orelse))
+    ))
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players operation expr_{0} = {1}'.format(exprids[node], get_player_and_obj(node.orelse)),
+        metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
+    ))
+    
+    return contr, x, z
+
+
+def parse_compare(node: ast.Compare, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+    for operand in [node.left] + node.comparators:
+        contr, x, z = setup_internal_values(operand, contr, x, z)
+    
+    left = node.left
+    for op, right in zip(node.ops, node.comparators):
+        current = ast.Compare(left=left, ops=[op], comparators=[right])
+        exprids.add(current)
+        
+        if type(op) in (ast.Eq, ast.NotEq, ast.Gt, ast.GtE, ast.Lt, ast.LtE):
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players operation temp py2cb_intrnl = {0}'.format(get_player_and_obj(left))
+            ))
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players operation temp py2cb_intrnl -= {0}'.format(get_player_and_obj(right))
+            ))
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players set expr_{0} py2cb_intrnl {1}'
+                    .format(exprids[current], int(isinstance(op, ast.NotEq)))
+            ))
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players test temp py2cb_intrnl {0} {1}'.format(
+                    {ast.Eq: 0, ast.NotEq: 0, ast.Gt: 1, ast.GtE: 0, ast.Lt: '*', ast.LtE: '*'}[type(op)],
+                    {ast.Eq: 0, ast.NotEq: 0, ast.Gt: '*', ast.GtE: '*', ast.Lt: -1, ast.LtE: 0}[type(op)]
+                )
+            ))
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players set expr_{0} py2cb_intrnl {1}'
+                    .format(exprids[current], int(not isinstance(op, ast.NotEq))),
+                metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
+            ))
+        else:
+            raise Exception('Invalid comparison operation (only ==, !=, <, <=, >, and >= are allowed).')
+        
+        left = right
+    
+    # noinspection PyUnboundLocalVariable
+    exprids.add(node, exprids[current])
+    
+    return contr, x, z
+
+
+def parse_subscript(node: ast.Subscript, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+    if isinstance(node.slice, ast.Index):
+        if not isinstance(node.value, ast.Name):
+            raise Exception('Only names can be subscripted at this time, sorry.')
+        
+        if node.value.id not in listids:
+            raise Exception('Cannot subscript a non-list (the reference was most likely undefined).')
+        
+        contr, x, z = setup_internal_values(node.slice.value, contr, x, z)
+        exprids.add(node)
+        
+        if isinstance(node.slice.value, ast.Num):
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players operation expr_{0} py2cb_intrnl = @e[type=ArmorStand,tag=list,'
+                'score_py2cb_idxs={1},score_py2cb_idxs_min={1},score_py2cb_ids={2},score_py2cb_min={2}] '
+                'py2cb_var'.format(exprids[node], listids[node.value.id], node.slice.value.n)
+            ))
+        else:
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},'
+                'score_py2cb_ids_min={0}] py2cb_idxs -= {1}'
+                    .format(listids[node.value.id], get_player_and_obj(node.slice.value))
+            ))
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players operation expr_{0} py2cb_intrnl = @e[type=ArmorStand,tag=list,'
+                'score_py2cb_idxs=0,score_py2cb_idxs_min=0,score_py2cb_ids={1},score_py2cb_ids_min={1}] '
+                'py2cb_var'.format(exprids[node], listids[node.value.id])
+            ))
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_idxs=0,'
+                'score_py2cb_idxs_min=0,score_py2cb_ids={1},score_py2cb_ids_min={1}] py2cb_idxs += {0}'
+                    .format(get_player_and_obj(node.slice.value), listids[node.value.id])
+            ))
+    else:
+        raise Exception('The only slice type supported is index (no colons allowed).')
+    
+    return contr, x, z
+
+
+def parse_if_statement(node: ast.If, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+    global num_branches
+    
+    contr, x, z = setup_internal_values(node.test, contr, x, z)
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players test {0} 0 0'.format(get_player_and_obj(node.test))
+    ))
+    num_branches += 1
+    contr, x, z = add_pulsegiver_block(contr, x, z)
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players test {0} * -1'.format(get_player_and_obj(node.test))
+    ))
+    num_branches += 1
+    contr, x, z = add_pulsegiver_block(contr, x, z)
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players test {0} 1 *'.format(get_player_and_obj(node.test))
+    ))
+    contr, x, z = add_pulsegiver_block(contr, x, z)
+    x += 1
+    
+    # if body block
+    xz = x, z
+    x = 0
+    z = num_branches - 1
+    old_z = z
+    
+    for stmt in node.body:
+        contr, x, z = parse_node(stmt, contr, x, z)
+    
+    contr, x, z = add_pulsegiver_block(contr, x, z, *xz, conditional=False)
+    
+    # else body block
+    x = 0
+    z = old_z - 1
+    
+    for stmt in node.orelse:
+        contr, x, z = parse_node(stmt, contr, x, z)
+    
+    contr, x, z = add_pulsegiver_block(contr, x, z, *xz, conditional=False)
+    
+    x, z = xz
+    
+    return contr, x, z
+
+
+def parse_while_loop(node: ast.While, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+    global num_branches
+    
+    # There's an if statement to go to the while loop, and one at the end of the while loop
+    # 'else' on while loops/break/continue unsupported
+    if node.orelse:
+        raise Exception('else statement on while loop is not supported')
+    
+    contr, x, z = setup_internal_values(node.test, contr, x, z)
+    x += 1
+    num_branches += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players test {0} * -1'.format(get_player_and_obj(node.test))
+    ))
+    contr, x, z = add_pulsegiver_block(contr, x, z)
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players test {0} 1 *'.format(get_player_and_obj(node.test))
+    ))
+    contr, x, z = add_pulsegiver_block(contr, x, z)
+    x += 1
+    
+    # while body branch
+    xz = x, z
+    x = 0
+    z = num_branches - 1
+    old_z = z
+    
+    for stmt in node.body:
+        contr, x, z = parse_node(stmt, contr, x, z)
+    
+    contr, x, z = setup_internal_values(node.test, contr, x, z, redef=True)
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players test {0} 0 0'.format(get_player_and_obj(node.test))
+    ))
+    contr, x, z = add_pulsegiver_block(contr, x, z, *xz)  # gives control back to while caller
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players test {0} * -1'.format(get_player_and_obj(node.test))
+    ))
+    contr, x, z = add_pulsegiver_block(contr, x, z, wz=old_z)  # gives pulse to own branch
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players test {0} 1 *'.format(get_player_and_obj(node.test))
+    ))
+    contr, x, z = add_pulsegiver_block(contr, x, z, wz=old_z)
+    
+    x, z = xz
+    
+    return contr, x, z
+
+
+def parse_for_loop(node: ast.For, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+    global num_branches
+    
+    # 'else' on for loops is unsupported
+    if node.orelse:
+        raise Exception('else statement on for loop is not supported.')
+    
+    if not isinstance(node.iter, ast.Name):
+        raise Exception('Only names can be iterated over. Try assigning your list to a name.')
+    
+    if node.iter.id not in listids:
+        raise Exception('Cannot iterate over non-list.')
+    
+    if not isinstance(node.target, ast.Name):
+        raise Exception('Only names can be iterator variables.')
+    
+    x += 1
+    contr.add_block((x, z), CommandBlock('scoreboard players set cntr py2cb_intrnl 0'))
+    
+    # If the iterator's not empty (has a 0th element), jump to the for body branch
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'testfor @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0},score_py2cb_idxs=0,'
+        'score_py2cb_idxs_min=0]'.format(listids[node.iter.id])
+    ))
+    num_branches += 1
+    contr, x, z = add_pulsegiver_block(contr, x, z)
+    x += 1
+    
+    # for body branch
+    xz = x, z
+    x = 0
+    z = num_branches - 1
+    old_z = z
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
+        'py2cb_idxs -= cntr py2cb_intrnl'.format(listids[node.iter.id])
+    ))
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players operation {0} py2cb_var = @e[type=ArmorStand,tag=list,score_py2cb_ids={1},'
+        'score_py2cb_ids_min={1},score_py2cb_idxs=0,score_py2cb_idxs_min=0] py2cb_var'
+            .format(node.target.id, listids[node.iter.id])
+    ))
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
+        'py2cb_idxs += cntr py2cb_intrnl'.format(listids[node.iter.id])
+    ))
+    
+    for stmt in node.body:
+        contr, x, z = parse_node(stmt, contr, x, z)
+    
+    x += 1
+    contr.add_block((x, z), CommandBlock('scoreboard players add cntr py2cb_intrnl 1'))
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
+        'py2cb_idxs -= cntr py2cb_intrnl'.format(listids[node.iter.id])
+    ))
+    x += 1
+    contr.add_block((x, z), CommandBlock('scoreboard players set forreturn py2cb_intrnl 1'))
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'testfor @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0},score_py2cb_idxs=0,'
+        'score_py2cb_idxs_min=0]'.format(listids[node.iter.id])
+    ))
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players set forreturn py2cb_intrnl 0', metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
+    ))
+    contr, x, z = add_pulsegiver_block(contr, x, z, wz=old_z)
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0}] '
+        'py2cb_idxs += cntr py2cb_intrnl'.format(listids[node.iter.id])
+    ))
+    x += 1
+    contr.add_block((x, z), CommandBlock('scoreboard players test forreturn py2cb_intrnl 1 1'))
+    contr, x, z = add_pulsegiver_block(contr, x, z, *xz)
+    
+    x, z = xz
+    
+    return contr, x, z
+
+
+def parse_function_call(node: ast.Call, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+    func_name = get_func_name(node)
+    
+    # say()
+    if func_name == 'say':
+        if len(node.keywords):
+            raise Exception('say() takes no keyword arguments.')
+        
+        args = []
+        for arg in node.args:
+            if isinstance(arg, ast.Str):
+                args.append(arg.s)
+            elif isinstance(arg, ast.Name) and arg.id in stringids:
+                args.append('@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]'
+                            .format(stringids[arg.id]))
+            else:
+                raise Exception('Only literal strings and names naming strings are supported in say(). '
+                                'Use tellraw() for better support.')
+        
+        x += 1
+        contr.add_block((x, z), CommandBlock('say {0}'.format(''.join(args))))
+    
+    # tell()
+    elif func_name == 'tell':
+        to = parse_kwargs(node.keywords, [('to', ast.Str('@a'), [ast.Str])], 'tell')['to'].s
+        
+        # This is also repeated, from say()...
+        args = []
+        for arg in node.args:
+            if isinstance(arg, ast.Str):
+                args.append(arg.s)
+            elif isinstance(arg, ast.Name) and arg in stringids:
+                args.append('@e[type=ArmorStand,tag=string,score_py2cb_var={0},score_py2cb_var_min={0}]'
+                            .format(stringids[arg.id]))
+            else:
+                raise Exception('Only literal strings and names naming strings are supported in say(). '
+                                'Use tellraw() for better support.')
+        
+        x += 1
+        contr.add_block((x, z), CommandBlock('tell {0} {1}'.format(to, ''.join(args))))
+    
+    # tellraw()
+    elif func_name == 'tellraw':
+        to = parse_kwargs(node.keywords, [('to', ast.Str('@a'), [ast.Str])], 'tellraw')['to'].s
+        
+        # Each arg is either a raw value, in which case there is no styling applied, or a tuple of raw values
+        # + a bitmap style, from the constants above OR'd together
+        json_args = []
+        for arg in node.args:
+            if isinstance(arg, ast.Tuple):
+                if not is_bitmap_safe(arg.elts[-1]):
+                    raise Exception('Malformed style in tellraw().')
+                style = eval(compile(ast.Expression(arg.elts[-1]), '', 'eval'), script.colours_and_styles)
+                
+                for elem in arg.elts[:-1]:
+                    contr, x, z = setup_internal_values(elem, contr, x, z)
+                    json_args.append(get_json(elem, style))
+            else:
+                contr, x, z = setup_internal_values(arg, contr, x, z)
+                json_args.append(get_json(arg))
+        
+        x += 1
+        contr.add_block((x, z), CommandBlock(
+            'tellraw {0} ["",{1}]'.format(to, ','.join(json_arg for json_arg in json_args))
+        ))
+    
+    # something else
+    else:
+        raise Exception('Unknown function name "{0}".'.format(func_name))
     
     return contr, x, z
 

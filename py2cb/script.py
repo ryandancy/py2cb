@@ -77,7 +77,7 @@ COLOUR_MASK = 0x00F
 
 # For colours with DARK_ variants, the DARK_ version is ANSI's 'normal', and the light/normal version is ANSI's 'bright'
 bitmap_to_ansi = {
-    BLACK: Fore.BLACK,
+    BLACK: Fore.BLACK + Style.DIM,
     DARK_BLUE: Fore.BLUE,
     DARK_GREEN: Fore.GREEN,
     DARK_AQUA: Fore.CYAN,

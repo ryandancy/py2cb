@@ -340,7 +340,16 @@ def get_func_name(node: ast.Call) -> str:
         raise Exception('Illegal function call.')
 
 
-ast_to_parsers = {}  # type: Dict[type, Callable[[ast.AST, Contraption, int, int], Tuple[Contraption, int, int]]]
+Parser = Callable[[ast.AST, Contraption, int, int], Tuple[Contraption, int, int]]
+ast_to_parsers = {}  # type: Dict[type, Parser]
+
+
+def parser(*types: Sequence[type]):
+    def inner(func: Parser):
+        for type_ in types:
+            ast_to_parsers[type_] = func
+        return func
+    return inner
 
 
 def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
@@ -351,6 +360,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
         return contr, x, z
 
 
+@parser(ast.Assign)
 def parse_assignment(node: ast.Assign, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     for target in node.targets:
         # Assignment with names (n = _)
@@ -493,9 +503,9 @@ def parse_assignment(node: ast.Assign, contr: Contraption, x: int, z: int) -> Tu
             raise Exception('Only names and subscripts are supported as assignment targets.')
     
     return contr, x, z
-ast_to_parsers[ast.Assign] = parse_assignment
 
 
+@parser(ast.AugAssign)
 def parse_aug_assignment(node: ast.AugAssign, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     if isinstance(node.target, ast.Name):
         contr, x, z = setup_internal_values(node.value, contr, x, z)
@@ -508,9 +518,9 @@ def parse_aug_assignment(node: ast.AugAssign, contr: Contraption, x: int, z: int
         raise Exception('Only names are supported as assignment targets.')
     
     return contr, x, z
-ast_to_parsers[ast.AugAssign] = parse_aug_assignment
 
 
+@parser(ast.BinOp)
 def parse_binop(node: ast.BinOp, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     for side in [node.left, node.right]:
         contr, x, z = setup_internal_values(side, contr, x, z)
@@ -530,9 +540,9 @@ def parse_binop(node: ast.BinOp, contr: Contraption, x: int, z: int) -> Tuple[Co
         ))
     
     return contr, x, z
-ast_to_parsers[ast.BinOp] = parse_binop
 
 
+@parser(ast.BoolOp)
 def parse_boolop(node: ast.BoolOp, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     exprids.add(node)
     
@@ -576,9 +586,9 @@ def parse_boolop(node: ast.BoolOp, contr: Contraption, x: int, z: int) -> Tuple[
         ))
     
     return contr, x, z
-ast_to_parsers[ast.BoolOp] = parse_boolop
 
 
+@parser(ast.UnaryOp)
 def parse_unaryop(node: ast.UnaryOp, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     if isinstance(node.op, ast.UAdd):
         contr, x, z = parse_node(node.operand, contr, x, z)
@@ -624,9 +634,9 @@ def parse_unaryop(node: ast.UnaryOp, contr: Contraption, x: int, z: int) -> Tupl
             ))
     
     return contr, x, z
-ast_to_parsers[ast.UnaryOp] = parse_unaryop
 
 
+@parser(ast.IfExp)
 def parse_ifexpr(node: ast.IfExp, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     # Pseudocode: res = body; if test == 0: res = orelse
     for expr in [node.body, node.orelse, node.test]:
@@ -648,9 +658,9 @@ def parse_ifexpr(node: ast.IfExp, contr: Contraption, x: int, z: int) -> Tuple[C
     ))
     
     return contr, x, z
-ast_to_parsers[ast.IfExp] = parse_ifexpr
 
 
+@parser(ast.Compare)
 def parse_compare(node: ast.Compare, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     for operand in [node.left] + node.comparators:
         contr, x, z = setup_internal_values(operand, contr, x, z)
@@ -696,9 +706,9 @@ def parse_compare(node: ast.Compare, contr: Contraption, x: int, z: int) -> Tupl
     exprids.add(node, exprids[current])
     
     return contr, x, z
-ast_to_parsers[ast.Compare] = parse_compare
 
 
+@parser(ast.Subscript)
 def parse_subscript(node: ast.Subscript, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     if isinstance(node.slice, ast.Index):
         if not isinstance(node.value, ast.Name):
@@ -740,9 +750,9 @@ def parse_subscript(node: ast.Subscript, contr: Contraption, x: int, z: int) -> 
         raise Exception('The only slice type supported is index (no colons allowed).')
     
     return contr, x, z
-ast_to_parsers[ast.Subscript] = parse_subscript
 
 
+@parser(ast.If)
 def parse_if_statement(node: ast.If, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     global num_branches
     
@@ -789,9 +799,9 @@ def parse_if_statement(node: ast.If, contr: Contraption, x: int, z: int) -> Tupl
     x, z = xz
     
     return contr, x, z
-ast_to_parsers[ast.If] = parse_if_statement
 
 
+@parser(ast.While)
 def parse_while_loop(node: ast.While, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     global num_branches
     
@@ -843,9 +853,9 @@ def parse_while_loop(node: ast.While, contr: Contraption, x: int, z: int) -> Tup
     x, z = xz
     
     return contr, x, z
-ast_to_parsers[ast.While] = parse_while_loop
 
 
+@parser(ast.For)
 def parse_for_loop(node: ast.For, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     global num_branches
     
@@ -931,17 +941,16 @@ def parse_for_loop(node: ast.For, contr: Contraption, x: int, z: int) -> Tuple[C
     x, z = xz
     
     return contr, x, z
-ast_to_parsers[ast.For] = parse_for_loop
 
 
 # noinspection PyUnusedLocal
+@parser(ast.Break, ast.Continue)
 def parse_break_or_continue(node: Union[ast.Break, ast.Continue], contr: Contraption, x: int, z: int) \
         -> Tuple[Contraption, int, int]:
     raise Exception('break/continue are not supported.')
-ast_to_parsers[ast.Break] = parse_break_or_continue
-ast_to_parsers[ast.Continue] = parse_break_or_continue
 
 
+@parser(ast.Call)
 def parse_function_call(node: ast.Call, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     func_name = get_func_name(node)
     
@@ -1013,12 +1022,11 @@ def parse_function_call(node: ast.Call, contr: Contraption, x: int, z: int) -> T
         raise Exception('Unknown function name "{0}".'.format(func_name))
     
     return contr, x, z
-ast_to_parsers[ast.Call] = parse_function_call
 
 
+@parser(ast.Expr)
 def parse_bare_expr(node: ast.Expr, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     return parse_node(node.value, contr, x, z)
-ast_to_parsers[ast.Expr] = parse_bare_expr
 
 
 def compile_ast(ast_root: ast.Module) -> Contraption:

@@ -1,7 +1,6 @@
 #!usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import argparse
 import ast
 import py2cb.script as script
 

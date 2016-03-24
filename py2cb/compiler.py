@@ -345,7 +345,7 @@ ast_to_parsers = {}
 
 def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     try:
-        return ast_to_parsers[type(node)]()
+        return ast_to_parsers[type(node)](node, contr, x, z)
     except KeyError:
         # Silently ignore things like pass, docstrings, etc
         return contr, x, z

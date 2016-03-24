@@ -941,7 +941,7 @@ def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contr
                 if isinstance(arg, ast.Tuple):
                     if not is_bitmap_safe(arg.elts[-1]):
                         raise Exception('Malformed style in tellraw().')
-                    style = eval(compile(ast.Expression(arg.elts[-1]), '', 'eval'))
+                    style = eval(compile(ast.Expression(arg.elts[-1]), '', 'eval'), script.colours_and_styles)
                     
                     for elem in arg.elts[:-1]:
                         contr, x, z = setup_internal_values(elem, contr, x, z)

@@ -38,6 +38,34 @@ UNDERLINED = 0x040
 STRIKETHROUGH = 0x080
 OBFUSCATED = 0x100
 
+colours_and_styles = {
+    'BLACK': BLACK,
+    'DARK_BLUE': DARK_BLUE,
+    'DARK_GREEN': DARK_GREEN,
+    'DARK_AQUA': DARK_AQUA,
+    'DARK_RED': DARK_RED,
+    'DARK_PURPLE': DARK_PURPLE,
+    'DARK_YELLOW': DARK_YELLOW,
+    'GOLD': GOLD,
+    'GRAY': GRAY,
+    'GREY': GREY,
+    'DARK_GRAY': DARK_GRAY,
+    'DARK_GREY': DARK_GREY,
+    'BLUE': BLUE,
+    'GREEN': GREEN,
+    'AQUA': AQUA,
+    'RED': RED,
+    'LIGHT_PURPLE': LIGHT_PURPLE,
+    'PURPLE': PURPLE,
+    'YELLOW': YELLOW,
+    'WHITE': WHITE,
+    'BOLD': BOLD,
+    'ITALIC': ITALIC,
+    'UNDERLINED': UNDERLINED,
+    'STRIKETHROUGH': STRIKETHROUGH,
+    'OBFUSCATED': OBFUSCATED
+}
+
 COLOUR_MASK = 0x00F
 
 # For colours with DARK_ variants, the DARK_ version is ANSI's 'normal', and the light/normal version is ANSI's 'bright'

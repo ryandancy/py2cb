@@ -277,7 +277,7 @@ class IDContainer:
 
 stringids = IDContainer(has_limit=True)
 exprids = IDContainer()
-listids = IDContainer()
+listids = IDContainer(has_limit=True)
 
 consts = []
 num_branches = 1

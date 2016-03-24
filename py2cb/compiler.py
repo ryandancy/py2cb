@@ -1028,8 +1028,7 @@ def pretty_print(array: List[List[Any]]) -> str:
     return res
 
 
-# BEGIN MAIN PROGRAM
-if __name__ == '__main__':
+def main() -> None:
     parsed_args = parse_args()
     
     with open(parsed_args.input_file) as infile:

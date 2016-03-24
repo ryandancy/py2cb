@@ -6,3 +6,7 @@ from py2cb.script import say, tell, tellraw, BLACK, DARK_BLUE, DARK_GREEN, DARK_
     BOLD, ITALIC, UNDERLINED, STRIKETHROUGH, OBFUSCATED
 
 __author__ = 'Copper'
+
+if __name__ == '__main__':
+    import py2cb.compiler
+    py2cb.compiler.main()

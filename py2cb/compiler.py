@@ -5,7 +5,7 @@ import ast
 import py2cb.script as script
 
 from pynbt import NBTFile, TAG_Byte, TAG_Byte_Array, TAG_Compound, TAG_Int, TAG_List, TAG_Short, TAG_String
-from typing import Tuple, List, Dict, Any, Optional, Sequence, Union
+from typing import Tuple, List, Dict, Any, Optional, Sequence, Union, Callable
 
 __author__ = 'Copper'
 
@@ -340,7 +340,7 @@ def get_func_name(node: ast.Call) -> str:
         raise Exception('Illegal function call.')
 
 
-ast_to_parsers = {}
+ast_to_parsers = {}  # type: Dict[type, Callable[[ast.AST, Contraption, int, int], Tuple[Contraption, int, int]]]
 
 
 def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:

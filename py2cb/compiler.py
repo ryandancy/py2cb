@@ -243,14 +243,14 @@ def get_op_char(op: ast.operator) -> str:
         raise Exception('Invalid binary operation (only +, -, *, //, % are allowed).')
 
 
-def setup_internal_values(node: ast.AST, contr: Contraption, x: int, z: int, redef: bool = False) \
+def setup_internal_values(node: ast.AST, scope: Scope, contr: Contraption, x: int, z: int, redef: bool = False) \
         -> Tuple[Contraption, int, int]:
     if isinstance(node, ast.Num):
         contr, x, z = add_const(node.n, contr, x, z)
     elif isinstance(node, ast.NameConstant):
         contr, x, z = add_const(nameconstant_to_int(node), contr, x, z)
     elif not isinstance(node, ast.Name) and (True if redef else node not in exprids):
-        contr, x, z = parse_node(node, contr, x, z)
+        contr, x, z = parse_node(node, scope, contr, x, z)
         if node not in exprids:
             exprids.add(node)
     return contr, x, z
@@ -373,7 +373,7 @@ def get_func_name(node: ast.Call) -> str:
         raise Exception('Illegal function call.')
 
 
-Parser = Callable[[ast.AST, Contraption, int, int], Tuple[Contraption, int, int]]
+Parser = Callable[[ast.AST, Scope, Contraption, int, int], Tuple[Contraption, int, int]]
 ast_to_parsers = {}  # type: Dict[type, Parser]
 
 
@@ -385,16 +385,17 @@ def parser(*types: Sequence[type]):
     return inner
 
 
-def parse_node(node: ast.AST, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+def parse_node(node: ast.AST, scope: Scope, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     try:
-        return ast_to_parsers[type(node)](node, contr, x, z)
+        return ast_to_parsers[type(node)](node, scope, contr, x, z)
     except KeyError:
         # Silently ignore things like pass, docstrings, etc
         return contr, x, z
 
 
 @parser(ast.Assign)
-def parse_assignment(node: ast.Assign, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+def parse_assignment(node: ast.Assign, scope: Scope, contr: Contraption, x: int, z: int) \
+        -> Tuple[Contraption, int, int]:
     for target in node.targets:
         # Assignment with names (n = _)
         if isinstance(target, ast.Name):
@@ -459,7 +460,7 @@ def parse_assignment(node: ast.Assign, contr: Contraption, x: int, z: int) -> Tu
                     listids.add(target.id)
                 
                 for i, elem in enumerate(node.value.elts):
-                    contr, x, z = setup_internal_values(elem, contr, x, z)
+                    contr, x, z = setup_internal_values(elem, scope, contr, x, z)
                     x += 1
                     contr.add_block((x, z), CommandBlock(
                         'kill @e[type=ArmorStand,tag=list,score_py2cb_ids={0},score_py2cb_ids_min={0},'
@@ -490,7 +491,7 @@ def parse_assignment(node: ast.Assign, contr: Contraption, x: int, z: int) -> Tu
             
             # Not-so-simple assignment - name = expr-or-something (ex: n = 2 * 3)
             else:
-                contr, x, z = setup_internal_values(node.value, contr, x, z)
+                contr, x, z = setup_internal_values(node.value, scope, contr, x, z)
                 x += 1
                 contr.add_block((x, z), CommandBlock(
                     'scoreboard players operation {0} py2cb_var = {1}'
@@ -504,7 +505,7 @@ def parse_assignment(node: ast.Assign, contr: Contraption, x: int, z: int) -> Tu
                 raise Exception('Cannot subscript a non-list.')
             
             if isinstance(target.slice, ast.Index):
-                contr, x, z = setup_internal_values(node.value, contr, x, z)
+                contr, x, z = setup_internal_values(node.value, scope, contr, x, z)
                 
                 if isinstance(target.slice.value, ast.Num):
                     x += 1
@@ -514,7 +515,7 @@ def parse_assignment(node: ast.Assign, contr: Contraption, x: int, z: int) -> Tu
                             .format(target.slice.value.n, listids[target.value.id], get_player_and_obj(node.value))
                     ))
                 else:
-                    contr, x, z = setup_internal_values(target.slice.value, contr, x, z)
+                    contr, x, z = setup_internal_values(target.slice.value, scope, contr, x, z)
                     
                     x += 1
                     contr.add_block((x, z), CommandBlock(
@@ -543,9 +544,10 @@ def parse_assignment(node: ast.Assign, contr: Contraption, x: int, z: int) -> Tu
 
 
 @parser(ast.AugAssign)
-def parse_aug_assignment(node: ast.AugAssign, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+def parse_aug_assignment(node: ast.AugAssign, scope: Scope, contr: Contraption, x: int, z: int) \
+        -> Tuple[Contraption, int, int]:
     if isinstance(node.target, ast.Name):
-        contr, x, z = setup_internal_values(node.value, contr, x, z)
+        contr, x, z = setup_internal_values(node.value, scope, contr, x, z)
         x += 1
         contr.add_block((x, z), CommandBlock(
             'scoreboard players operation {0} py2cb_var {2}= {1}'
@@ -558,9 +560,9 @@ def parse_aug_assignment(node: ast.AugAssign, contr: Contraption, x: int, z: int
 
 
 @parser(ast.BinOp)
-def parse_binop(node: ast.BinOp, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+def parse_binop(node: ast.BinOp, scope: Scope, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     for side in [node.left, node.right]:
-        contr, x, z = setup_internal_values(side, contr, x, z)
+        contr, x, z = setup_internal_values(side, scope, contr, x, z)
     
     # <= is issubset operator on sets
     if set(map(type, [node.left, node.right])) <= {ast.Num, ast.Name}:
@@ -580,19 +582,19 @@ def parse_binop(node: ast.BinOp, contr: Contraption, x: int, z: int) -> Tuple[Co
 
 
 @parser(ast.BoolOp)
-def parse_boolop(node: ast.BoolOp, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+def parse_boolop(node: ast.BoolOp, scope: Scope, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     exprids.add(node)
     
     if len(node.values) > 2:
         prev = ast.BoolOp(op=node.op, values=node.values[:-1], lineno=0, col_offset=0)
-        contr, x, z = parse_node(prev, contr, x, z)
+        contr, x, z = parse_node(prev, scope, contr, x, z)
         x += 1
         contr.add_block((x, z), CommandBlock(
             'scoreboard players operation expr_{0} py2cb_intrnl = expr_{1} py2cb_intrnl'
                 .format(exprids[node], exprids[prev])
         ))
     else:
-        contr, x, z = setup_internal_values(node.values[0], contr, x, z)
+        contr, x, z = setup_internal_values(node.values[0], scope, contr, x, z)
         
         x += 1
         contr.add_block((x, z), CommandBlock(
@@ -600,7 +602,7 @@ def parse_boolop(node: ast.BoolOp, contr: Contraption, x: int, z: int) -> Tuple[
                 .format(exprids[node], get_player_and_obj(node.values[0]))
         ))
     
-    contr, x, z = setup_internal_values(node.values[-1], contr, x, z)
+    contr, x, z = setup_internal_values(node.values[-1], scope, contr, x, z)
     
     if isinstance(node.op, ast.And):
         # a and b = a * b where a and b are both 0 or 1
@@ -626,11 +628,11 @@ def parse_boolop(node: ast.BoolOp, contr: Contraption, x: int, z: int) -> Tuple[
 
 
 @parser(ast.UnaryOp)
-def parse_unaryop(node: ast.UnaryOp, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+def parse_unaryop(node: ast.UnaryOp, scope: Scope, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     if isinstance(node.op, ast.UAdd):
-        contr, x, z = parse_node(node.operand, contr, x, z)
+        contr, x, z = parse_node(node.operand, scope, contr, x, z)
     else:
-        contr, x, z = setup_internal_values(node.operand, contr, x, z)
+        contr, x, z = setup_internal_values(node.operand, scope, contr, x, z)
         exprids.add(node)
         
         if type(node.op) in (ast.USub, ast.Invert):
@@ -674,10 +676,10 @@ def parse_unaryop(node: ast.UnaryOp, contr: Contraption, x: int, z: int) -> Tupl
 
 
 @parser(ast.IfExp)
-def parse_ifexpr(node: ast.IfExp, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+def parse_ifexpr(node: ast.IfExp, scope: Scope, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     # Pseudocode: res = body; if test == 0: res = orelse
     for expr in [node.body, node.orelse, node.test]:
-        contr, x, z = setup_internal_values(expr, contr, x, z)
+        contr, x, z = setup_internal_values(expr, scope, contr, x, z)
     
     exprids.add(node)
     x += 1
@@ -698,9 +700,9 @@ def parse_ifexpr(node: ast.IfExp, contr: Contraption, x: int, z: int) -> Tuple[C
 
 
 @parser(ast.Compare)
-def parse_compare(node: ast.Compare, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+def parse_compare(node: ast.Compare, scope: Scope, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     for operand in [node.left] + node.comparators:
-        contr, x, z = setup_internal_values(operand, contr, x, z)
+        contr, x, z = setup_internal_values(operand, scope, contr, x, z)
     
     compare_exprids = []
     
@@ -756,7 +758,8 @@ def parse_compare(node: ast.Compare, contr: Contraption, x: int, z: int) -> Tupl
 
 
 @parser(ast.Subscript)
-def parse_subscript(node: ast.Subscript, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+def parse_subscript(node: ast.Subscript, scope: Scope, contr: Contraption, x: int, z: int) \
+        -> Tuple[Contraption, int, int]:
     if isinstance(node.slice, ast.Index):
         if not isinstance(node.value, ast.Name):
             raise Exception('Only names can be subscripted at this time, sorry.')
@@ -764,7 +767,7 @@ def parse_subscript(node: ast.Subscript, contr: Contraption, x: int, z: int) -> 
         if node.value.id not in listids:
             raise Exception('Cannot subscript a non-list (the reference was most likely undefined).')
         
-        contr, x, z = setup_internal_values(node.slice.value, contr, x, z)
+        contr, x, z = setup_internal_values(node.slice.value, scope, contr, x, z)
         exprids.add(node)
         
         if isinstance(node.slice.value, ast.Num):
@@ -800,10 +803,10 @@ def parse_subscript(node: ast.Subscript, contr: Contraption, x: int, z: int) -> 
 
 
 @parser(ast.If)
-def parse_if_statement(node: ast.If, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+def parse_if_statement(node: ast.If, scope: Scope, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     global num_branches
     
-    contr, x, z = setup_internal_values(node.test, contr, x, z)
+    contr, x, z = setup_internal_values(node.test, scope, contr, x, z)
     x += 1
     contr.add_block((x, z), CommandBlock(
         'scoreboard players test {0} 0 0'.format(get_player_and_obj(node.test))
@@ -830,7 +833,7 @@ def parse_if_statement(node: ast.If, contr: Contraption, x: int, z: int) -> Tupl
     old_z = z
     
     for stmt in node.body:
-        contr, x, z = parse_node(stmt, contr, x, z)
+        contr, x, z = parse_node(stmt, scope, contr, x, z)
     
     contr, x, z = add_pulsegiver_block(contr, x, z, *xz, conditional=False)
     
@@ -839,7 +842,7 @@ def parse_if_statement(node: ast.If, contr: Contraption, x: int, z: int) -> Tupl
     z = old_z - 1
     
     for stmt in node.orelse:
-        contr, x, z = parse_node(stmt, contr, x, z)
+        contr, x, z = parse_node(stmt, scope, contr, x, z)
     
     contr, x, z = add_pulsegiver_block(contr, x, z, *xz, conditional=False)
     
@@ -849,7 +852,7 @@ def parse_if_statement(node: ast.If, contr: Contraption, x: int, z: int) -> Tupl
 
 
 @parser(ast.While)
-def parse_while_loop(node: ast.While, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+def parse_while_loop(node: ast.While, scope: Scope, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     global num_branches
     
     # There's an if statement to go to the while loop, and one at the end of the while loop
@@ -857,7 +860,7 @@ def parse_while_loop(node: ast.While, contr: Contraption, x: int, z: int) -> Tup
     if node.orelse:
         raise Exception('else statement on while loop is not supported')
     
-    contr, x, z = setup_internal_values(node.test, contr, x, z)
+    contr, x, z = setup_internal_values(node.test, scope, contr, x, z)
     x += 1
     num_branches += 1
     contr.add_block((x, z), CommandBlock(
@@ -878,9 +881,9 @@ def parse_while_loop(node: ast.While, contr: Contraption, x: int, z: int) -> Tup
     old_z = z
     
     for stmt in node.body:
-        contr, x, z = parse_node(stmt, contr, x, z)
+        contr, x, z = parse_node(stmt, scope, contr, x, z)
     
-    contr, x, z = setup_internal_values(node.test, contr, x, z, redef=True)
+    contr, x, z = setup_internal_values(node.test, scope, contr, x, z, redef=True)
     x += 1
     contr.add_block((x, z), CommandBlock(
         'scoreboard players test {0} 0 0'.format(get_player_and_obj(node.test))
@@ -903,7 +906,7 @@ def parse_while_loop(node: ast.While, contr: Contraption, x: int, z: int) -> Tup
 
 
 @parser(ast.For)
-def parse_for_loop(node: ast.For, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+def parse_for_loop(node: ast.For, scope: Scope, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
     global num_branches
     
     # 'else' on for loops is unsupported
@@ -955,7 +958,7 @@ def parse_for_loop(node: ast.For, contr: Contraption, x: int, z: int) -> Tuple[C
     ))
     
     for stmt in node.body:
-        contr, x, z = parse_node(stmt, contr, x, z)
+        contr, x, z = parse_node(stmt, scope, contr, x, z)
     
     x += 1
     contr.add_block((x, z), CommandBlock('scoreboard players add cntr py2cb_intrnl 1'))
@@ -992,13 +995,14 @@ def parse_for_loop(node: ast.For, contr: Contraption, x: int, z: int) -> Tuple[C
 
 # noinspection PyUnusedLocal
 @parser(ast.Break, ast.Continue)
-def parse_break_or_continue(node: Union[ast.Break, ast.Continue], contr: Contraption, x: int, z: int) \
+def parse_break_or_continue(node: Union[ast.Break, ast.Continue], scope: Scope, contr: Contraption, x: int, z: int) \
         -> Tuple[Contraption, int, int]:
     raise Exception('break/continue are not supported.')
 
 
 @parser(ast.Call)
-def parse_function_call(node: ast.Call, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+def parse_function_call(node: ast.Call, scope: Scope, contr: Contraption, x: int, z: int) \
+        -> Tuple[Contraption, int, int]:
     func_name = get_func_name(node)
     
     # say()
@@ -1053,10 +1057,10 @@ def parse_function_call(node: ast.Call, contr: Contraption, x: int, z: int) -> T
                 style = eval(compile(ast.Expression(arg.elts[-1]), '', 'eval'), script.colours_and_styles)
                 
                 for elem in arg.elts[:-1]:
-                    contr, x, z = setup_internal_values(elem, contr, x, z)
+                    contr, x, z = setup_internal_values(elem, scope, contr, x, z)
                     json_args.append(get_json(elem, style))
             else:
-                contr, x, z = setup_internal_values(arg, contr, x, z)
+                contr, x, z = setup_internal_values(arg, scope, contr, x, z)
                 json_args.append(get_json(arg))
         
         x += 1
@@ -1073,7 +1077,7 @@ def parse_function_call(node: ast.Call, contr: Contraption, x: int, z: int) -> T
         exprids.add(node)
         
         if len(node.args) == 1:
-            contr, x, z = setup_internal_values(node.args[0], contr, x, z)
+            contr, x, z = setup_internal_values(node.args[0], scope, contr, x, z)
             x += 1
             contr.add_block((x, z), CommandBlock(
                 'scoreboard players operation expr_{0} py2cb_intrnl = {1}'
@@ -1084,7 +1088,7 @@ def parse_function_call(node: ast.Call, contr: Contraption, x: int, z: int) -> T
         for arg in node.args:
             if arg in listids:
                 raise Exception('Py2CB\'s {0}() does not support {0} of an iterable.'.format(func_name))
-            contr, x, z = setup_internal_values(arg, contr, x, z)
+            contr, x, z = setup_internal_values(arg, scope, contr, x, z)
         
         x += 1
         contr.add_block((x, z), CommandBlock(
@@ -1106,8 +1110,8 @@ def parse_function_call(node: ast.Call, contr: Contraption, x: int, z: int) -> T
 
 
 @parser(ast.Expr)
-def parse_bare_expr(node: ast.Expr, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
-    return parse_node(node.value, contr, x, z)
+def parse_bare_expr(node: ast.Expr, scope: Scope, contr: Contraption, x: int, z: int) -> Tuple[Contraption, int, int]:
+    return parse_node(node.value, scope, contr, x, z)
 
 
 def compile_ast(ast_root: ast.Module) -> Contraption:
@@ -1125,7 +1129,7 @@ def compile_ast(ast_root: ast.Module) -> Contraption:
     res.add_block((x, z), CommandBlock('kill @e[type=ArmorStand,tag=py2cb]'))
     
     for statement in ast_root.body:
-        res, x, z = parse_node(statement, res, x, z)
+        res, x, z = parse_node(statement, Scope.GLOBAL, res, x, z)
     return res
 
 

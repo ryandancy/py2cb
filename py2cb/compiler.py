@@ -25,10 +25,11 @@ class CommandBlock:
     
     CONDITIONAL = 8
     
-    def __init__(self, command: str, type_: int = CHAIN, metadata: int = EAST, auto: bool = True) -> None:
+    def __init__(self, command: str, type_: int = CHAIN, direction: int = EAST, conditional: bool = False,
+                 auto: bool = True) -> None:
         self.command = command
         self.type_ = type_
-        self.metadata = metadata
+        self.metadata = direction | (CommandBlock.CONDITIONAL * conditional)
         self.auto = auto
     
     def get_command_block_name(self) -> str:
@@ -241,7 +242,7 @@ def add_pulsegiver_block(contr: Contraption, x: int, z: int,
         CommandBlock(
             'setblock ~ ~ ~ minecraft:air', type_=CommandBlock.IMPULSE, auto=True
         ).get_gen_command(offx, offz),
-        metadata=CommandBlock.EAST | (CommandBlock.CONDITIONAL if conditional else 0)
+        conditional=conditional
     ))
     
     return contr, x, z
@@ -634,7 +635,7 @@ def parse_unaryop(node: ast.UnaryOp, contr: Contraption, x: int, z: int) -> Tupl
             x += 1
             contr.add_block((x, z), CommandBlock(
                 'scoreboard players set expr_{0} 1'.format(exprids[node]),
-                metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
+                conditional=True
             ))
     
     return contr, x, z
@@ -658,7 +659,7 @@ def parse_ifexpr(node: ast.IfExp, contr: Contraption, x: int, z: int) -> Tuple[C
     x += 1
     contr.add_block((x, z), CommandBlock(
         'scoreboard players operation expr_{0} = {1}'.format(exprids[node], get_player_and_obj(node.orelse)),
-        metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
+        conditional=True
     ))
     
     return contr, x, z
@@ -702,7 +703,7 @@ def parse_compare(node: ast.Compare, contr: Contraption, x: int, z: int) -> Tupl
             contr.add_block((x, z), CommandBlock(
                 'scoreboard players set expr_{0} py2cb_intrnl {1}'
                     .format(exprids[current], int(not isinstance(op, ast.NotEq))),
-                metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
+                conditional=True
             ))
         else:
             raise Exception('Invalid comparison operation (only ==, !=, <, <=, >, and >= are allowed).')
@@ -940,7 +941,7 @@ def parse_for_loop(node: ast.For, contr: Contraption, x: int, z: int) -> Tuple[C
     ))
     x += 1
     contr.add_block((x, z), CommandBlock(
-        'scoreboard players set forreturn py2cb_intrnl 0', metadata=CommandBlock.EAST | CommandBlock.CONDITIONAL
+        'scoreboard players set forreturn py2cb_intrnl 0', conditional=True
     ))
     contr, x, z = add_pulsegiver_block(contr, x, z, wz=old_z)
     x += 1

@@ -365,6 +365,10 @@ def parse_assignment(node: ast.Assign, contr: Contraption, x: int, z: int) -> Tu
     for target in node.targets:
         # Assignment with names (n = _)
         if isinstance(target, ast.Name):
+            # Minecraft prevents player names >40 characters long, we reserve the last 2
+            if len(target.id) > 38:
+                raise Exception('Max name length is 38 chars (Minecraft caps at 40, Py2CB reserves 2).')
+            
             # Simple assignment - name = num (ex: n = 4)
             if isinstance(node.value, ast.Num):
                 x += 1

@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import ast
+import unicodedata
 import py2cb.script as script
 
 from pynbt import NBTFile, TAG_Byte, TAG_Byte_Array, TAG_Compound, TAG_Int, TAG_List, TAG_Short, TAG_String
@@ -166,6 +167,37 @@ class IDContainer:
 stringids = IDContainer(has_limit=True)
 exprids = IDContainer()
 listids = IDContainer(has_limit=True)
+scopeids = IDContainer()
+
+
+class Scope:
+    
+    def __init__(self, parent: Optional['Scope']) -> None:
+        self.children = []
+        
+        # None parent means that this scope is the global scope
+        if parent is not None:
+            self.parent = parent
+            self.parent.children.append(self)
+        
+        scopeids.add(self)
+        self.id = scopeids[self]
+        
+        i = self.id
+        while unicodedata.category(chr(i)).startswith('C'):
+            # We don't want control characters/format/not assigned/surrogates/private use in suffixes
+            i += 1
+            
+            if i > 0xFFFF:
+                raise Exception('Too many scopes!')
+        
+        self.char = chr(i)
+    
+    def transform(self, name: str) -> str:
+        return name + self.char
+
+Scope.GLOBAL = Scope(None)
+
 
 consts = []
 num_branches = 1

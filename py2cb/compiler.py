@@ -59,7 +59,7 @@ class CommandBlock:
 class Contraption:
     
     def __init__(self) -> None:
-        self.cblocks = []  # type: List[Tuple[Tuple[int, int, int], CommandBlock]]
+        self.cblocks = []  # type: List[Tuple[Tuple[int, int], CommandBlock]]
     
     def add_block(self, xz: Tuple[int, int], block: CommandBlock) -> None:
         self.cblocks.append((xz, block))

@@ -131,7 +131,7 @@ class Contraption:
 
 class IDContainer:
     
-    def __init__(self, has_limit=False):
+    def __init__(self, has_limit=False) -> None:
         self.has_limit = has_limit
         self._vars_to_ids = {}
         self._id_counter = 0

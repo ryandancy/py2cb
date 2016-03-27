@@ -184,8 +184,8 @@ class Scope:
         self.id = scopeids[self]
         
         i = self.id
-        while unicodedata.category(chr(i)).startswith('C'):
-            # We don't want control characters/format/not assigned/surrogates/private use in suffixes
+        while unicodedata.category(chr(i))[0] in 'CZ':
+            # We don't want control characters/format/not assigned/surrogates/private use/whitespace in suffixes
             i += 1
             
             if i > 0xFFFF:

@@ -167,7 +167,7 @@ class IDContainer:
 stringids = IDContainer(has_limit=True)
 exprids = IDContainer()
 listids = IDContainer(has_limit=True)
-scopeids = IDContainer()
+scopeids = IDContainer()  # limit is implemented in Scope.__init__
 
 
 class Scope:
@@ -1126,6 +1126,52 @@ def parse_function_call(node: ast.Call, scope: Scope, contr: Contraption, x: int
     else:
         raise Exception('Unknown function name "{0}".'.format(func_name))
     
+    return contr, x, z
+
+
+@parser(ast.FunctionDef)
+def parse_function_def(node: ast.FunctionDef, scope: Scope, contr: Contraption, x: int, z: int) \
+        -> Tuple[Contraption, int, int]:
+    global num_branches
+    
+    function_scope = Scope(scope)
+    
+    num_branches += 1
+    
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'kill @e[type=ArmorStand,tag=function,score_py2cb_var={0},score_py2cb_var_min={0}]'.format(function_scope.id)
+    ))
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'summon ArmorStand ~{0} ~1 ~{1} {NoGravity:1b,Tags:["function_noname","py2cb"]}'
+            .format(-x - 1, num_branches - 1)
+    ))
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'scoreboard players set @e[type=ArmorStand,tag=function_noname] py2cb_var {0}'.format(function_scope.id)
+    ))
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'entitydata @e[type=ArmorStand,tag=function_noname] {Tags:["function","py2cb"]}'
+    ))
+    
+    xz = x, z
+    x = 0
+    z = num_branches - 1
+    
+    for stmt in node.body:
+        contr, x, z = parse_node(stmt, function_scope, contr, x, z)
+    
+    # Return control to the caller, which will have set an armorstand with tag=return at the return location
+    x += 1
+    contr.add_block((x, z), CommandBlock(
+        'execute @e[type=ArmorStand,tag=return] ~ ~-1 ~ {0}'.format(
+            CommandBlock('setblock ~ ~ ~ minecraft:air', type_=CommandBlock.IMPULSE, auto=True).get_gen_command(0, 0)
+        )
+    ))
+    
+    x, z = xz
     return contr, x, z
 
 

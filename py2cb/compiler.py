@@ -172,7 +172,9 @@ scopeids = IDContainer()  # limit is implemented in Scope.__init__
 
 class Scope:
     
-    def __init__(self, parent: Optional['Scope']) -> None:
+    names_to_scopes = {}  # type: Dict[str, Scope]
+    
+    def __init__(self, name: str, parent: Optional['Scope']) -> None:
         self.children = []
         
         # None parent means that this scope is the global scope
@@ -193,11 +195,13 @@ class Scope:
                 raise Exception('Too many scopes!')
         
         self.char = chr(i)
+        
+        Scope.names_to_scopes[name] = self
     
     def transform(self, name: str) -> str:
         return name.ljust(39, '-') + self.char if len(name) != 40 else name
 
-Scope.GLOBAL = Scope(None)
+Scope.GLOBAL = Scope('<global>', None)
 
 
 consts = []
@@ -1134,7 +1138,8 @@ def parse_function_def(node: ast.FunctionDef, scope: Scope, contr: Contraption, 
         -> Tuple[Contraption, int, int]:
     global num_branches
     
-    function_scope = Scope(scope)
+    node.name = scope.transform(node.name)
+    function_scope = Scope(node.name, scope)
     
     num_branches += 1
     

@@ -174,7 +174,7 @@ class Scope:
     
     names_to_scopes = {}  # type: Dict[str, Scope]
     
-    def __init__(self, name: str, parent: Optional['Scope']) -> None:
+    def __init__(self, name: str, node: Optional[ast.AST], parent: Optional['Scope']) -> None:
         self.children = []
         
         # None parent means that this scope is the global scope
@@ -196,12 +196,14 @@ class Scope:
         
         self.char = chr(i)
         
-        Scope.names_to_scopes[name] = self
+        self.node = node
+        self.name = name
+        Scope.names_to_scopes[self.name] = self
     
     def transform(self, name: str) -> str:
         return name.ljust(39, '-') + self.char if len(name) != 40 else name
 
-Scope.GLOBAL = Scope('<global>', None)
+Scope.GLOBAL = Scope('<global>', None, None)
 
 
 consts = []
@@ -1139,7 +1141,7 @@ def parse_function_def(node: ast.FunctionDef, scope: Scope, contr: Contraption, 
     global num_branches
     
     node.name = scope.transform(node.name)
-    function_scope = Scope(node.name, scope)
+    function_scope = Scope(node.name, node, scope)
     
     num_branches += 1
     

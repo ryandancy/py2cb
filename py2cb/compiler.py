@@ -184,8 +184,9 @@ class Scope:
         self.id = scopeids[self]
         
         i = self.id
-        while unicodedata.category(chr(i))[0] in 'CZ':
+        while chr(i) == '-' or unicodedata.category(chr(i))[0] in 'CZ':
             # We don't want control characters/format/not assigned/surrogates/private use/whitespace in suffixes
+            # '-' is used as the fill character to pad everything to 39 chars
             i += 1
             
             if i > 0xFFFF:
@@ -194,7 +195,7 @@ class Scope:
         self.char = chr(i)
     
     def transform(self, name: str) -> str:
-        return name + self.char
+        return name.ljust(39, '-') + self.char if len(name) != 40 else name
 
 Scope.GLOBAL = Scope(None)
 

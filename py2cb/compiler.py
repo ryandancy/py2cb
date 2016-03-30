@@ -174,7 +174,7 @@ class Scope:
     
     names_to_scopes = {}  # type: Dict[str, Scope]
     
-    def __init__(self, name: str, node: Optional[ast.AST], parent: Optional['Scope']) -> None:
+    def __init__(self, name: str, node: Optional[ast.FunctionDef], parent: Optional['Scope']) -> None:
         self.children = []
         
         # None parent means that this scope is the global scope
@@ -382,6 +382,43 @@ def get_func_name(node: ast.Call) -> str:
     # Something illegal like spam()()
     else:
         raise Exception('Illegal function call.')
+
+
+def func_call_matches(call: ast.Call, func: ast.FunctionDef) -> bool:
+    # We assume that the name has already been checked and the function sig is valid, and perform no type-hint checking
+    # *args/**kwargs are not supported, self/cls are not accounted for
+    # Make sure that all missing args are not required args
+    call_kwarg_names = [kwarg.arg for kwarg in call.keywords]
+    num_pos_args = len(call.args)
+    for arg in func.args.args:
+        if arg.arg in call_kwarg_names:
+            del call_kwarg_names[call_kwarg_names.index(arg.arg)]
+        elif num_pos_args > 0:
+            num_pos_args -= 1
+        elif arg.arg not in func.args.args[-len(func.args.defaults):]:
+            return False
+    return True
+
+
+# Merge with func_call_matches???
+def get_arg_dict(call: ast.Call, func: ast.FunctionDef) -> Dict[str, ast.AST]:
+    """assumes that func_call_matches(call, func)"""
+    res = {}
+    
+    kwarg_dict = {kwarg.arg: kwarg.value for kwarg in call.keywords}
+    arg_names = [arg.arg for arg in func.args.args if arg.arg not in kwarg_dict and
+                 arg not in func.args.args[-len(func.args.defaults):]]
+    for arg in func.args.args:
+        if arg.arg in kwarg_dict:
+            res[arg.arg] = kwarg_dict[arg.arg]
+        elif arg.arg in arg_names:
+            # arg.arg should be arg_names[0]...
+            res[arg.arg] = call.args[0]
+            del arg_names[arg_names.index(arg.arg)]
+        elif arg in func.args.args[-len(func.args.defaults):]:
+            res[arg.arg] = func.args.defaults[len(func.args.args) - func.args.args.index(arg) - 1]
+    
+    return res
 
 
 Parser = Callable[[ast.AST, Scope, Contraption, int, int], Tuple[Contraption, int, int]]
@@ -1127,6 +1164,43 @@ def parse_function_call(node: ast.Call, scope: Scope, contr: Contraption, x: int
                 'scoreboard players operation expr_{0} py2cb_intrnl {2} {1}'
                     .format(exprids[node], get_player_and_obj(arg, scope), {'min': '<', 'max': '>'}[func_name])
             ))
+    
+    # User-defined function
+    elif func_name in Scope.names_to_scopes:
+        func_scope = Scope.names_to_scopes[func_name]
+        
+        if not func_call_matches(node, func_scope.node):
+            raise Exception('Function call did not match function signature.')
+        
+        # Set all args to their values / default values in the scope
+        # Strings aren't supported yet
+        args_dict = get_arg_dict(node, func_scope.node)
+        for arg, value in args_dict.items():
+            arg = func_scope.transform(arg)
+            value, contr, x, z = setup_internal_values(value, func_scope, contr, x, z)
+            
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players operation {0} py2cb_var = {1}'.format(arg, get_player_and_obj(value, func_scope))
+            ))
+        
+        # Summon the ArmorStand[tag="return"]
+        x += 1
+        contr.add_block((x, z), CommandBlock(
+            'summon ArmorStand ~2 ~1 ~ {NoGravity:1b,Tags:["return","py2cb"]}'
+        ))
+        
+        # Transfer control to the function
+        x += 1
+        contr.add_block((x, z), CommandBlock(
+            'execute @e[type=ArmorStand,tag=function,score_py2cb_var={0},score_py2cb_var_min={0}] ~ ~-1 ~ {1}'.format(
+                func_scope.id, CommandBlock('setblock ~ ~ ~ minecraft:air').get_gen_command(0, 0)
+            )
+        ))
+        
+        # Add a space & kill the ArmorStand[tag="return"]
+        x += 2  # this thing that looks like a bug isn't
+        contr.add_block((x, z), CommandBlock('kill @e[type=ArmorStand,tag=return]'))
     
     # something else
     else:

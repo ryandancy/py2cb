@@ -1166,7 +1166,8 @@ def parse_function_call(node: ast.Call, scope: Scope, contr: Contraption, x: int
             ))
     
     # User-defined function
-    elif func_name in Scope.names_to_scopes:
+    elif scope.transform(func_name) in Scope.names_to_scopes:
+        func_name = scope.transform(func_name)
         func_scope = Scope.names_to_scopes[func_name]
         
         if not func_call_matches(node, func_scope.node):

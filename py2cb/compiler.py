@@ -395,7 +395,7 @@ def func_call_matches(call: ast.Call, func: ast.FunctionDef) -> bool:
             del call_kwarg_names[call_kwarg_names.index(arg.arg)]
         elif num_pos_args > 0:
             num_pos_args -= 1
-        elif arg.arg not in func.args.args[-len(func.args.defaults):]:
+        elif arg not in func.args.args[-len(func.args.defaults):]:
             return False
     return True
 

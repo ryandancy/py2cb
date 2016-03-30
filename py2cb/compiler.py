@@ -407,7 +407,7 @@ def get_arg_dict(call: ast.Call, func: ast.FunctionDef) -> Dict[str, ast.AST]:
     
     kwarg_dict = {kwarg.arg: kwarg.value for kwarg in call.keywords}
     arg_names = [arg.arg for arg in func.args.args if arg.arg not in kwarg_dict and
-                 arg not in func.args.args[-len(func.args.defaults):]]
+                 (len(func.args.defaults) == 0 or arg not in func.args.args[-len(func.args.defaults):])]
     for arg in func.args.args:
         if arg.arg in kwarg_dict:
             res[arg.arg] = kwarg_dict[arg.arg]

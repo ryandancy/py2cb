@@ -1228,7 +1228,7 @@ def parse_function_def(node: ast.FunctionDef, scope: Scope, contr: Contraption, 
     ))
     x += 1
     contr.add_block((x, z), CommandBlock(
-        'summon ArmorStand ~{0} ~1 ~{1} {NoGravity:1b,Tags:["function_noname","py2cb"]}'
+        'summon ArmorStand ~{0} ~1 ~{1} {{NoGravity:1b,Tags:["function_noname","py2cb"]}}'
             .format(-x - 1, num_branches - 1)
     ))
     x += 1

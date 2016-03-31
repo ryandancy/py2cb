@@ -856,9 +856,8 @@ def parse_subscript(node: ast.Subscript, scope: Scope, contr: Contraption, x: in
             ))
             x += 1
             contr.add_block((x, z), CommandBlock(
-                'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_idxs=0,'
-                'score_py2cb_idxs_min=0,score_py2cb_ids={1},score_py2cb_ids_min={1}] py2cb_idxs += {0}'
-                    .format(get_player_and_obj(node.slice.value, scope), listids[node.value.id])
+                'scoreboard players operation @e[type=ArmorStand,tag=list,score_py2cb_ids={1},score_py2cb_ids_min={1}] '
+                'py2cb_idxs += {0}'.format(get_player_and_obj(node.slice.value, scope), listids[node.value.id])
             ))
     else:
         raise Exception('The only slice type supported is index (no colons allowed).')

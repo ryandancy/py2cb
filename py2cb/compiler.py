@@ -173,6 +173,7 @@ scopeids = IDContainer()  # limit is implemented in Scope.__init__
 class Scope:
     
     names_to_scopes = {}  # type: Dict[str, Scope]
+    _used_ids = []
     
     def __init__(self, name: str, node: Optional[ast.FunctionDef], parent: Optional['Scope']) -> None:
         self.children = []
@@ -186,14 +187,15 @@ class Scope:
         self.id = scopeids[self]
         
         i = self.id
-        while chr(i) == '-' or unicodedata.category(chr(i))[0] in 'CZ':
+        while chr(i) == '"' or i in Scope._used_ids or unicodedata.category(chr(i))[0] in 'CZ':
             # We don't want control characters/format/not assigned/surrogates/private use/whitespace in suffixes
-            # '-' is used as the fill character to pad everything to 39 chars
+            # '"' is the quote char in MC JSON
             i += 1
             
             if i > 0xFFFF:
                 raise Exception('Too many scopes!')
         
+        Scope._used_ids.append(i)
         self.char = chr(i)
         
         self.node = node

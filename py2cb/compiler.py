@@ -1199,7 +1199,9 @@ def parse_function_call(node: ast.Call, scope: Scope, contr: Contraption, x: int
         x += 1
         contr.add_block((x, z), CommandBlock(
             'execute @e[type=ArmorStand,tag=function,score_py2cb_var={0},score_py2cb_var_min={0}] ~ ~-1 ~ {1}'.format(
-                func_scope.id, CommandBlock('setblock ~ ~ ~ minecraft:air').get_gen_command(0, 0)
+                func_scope.id, CommandBlock(
+                    'setblock ~ ~ ~ minecraft:air', type_=CommandBlock.IMPULSE
+                ).get_gen_command(0, 0)
             )
         ))
         
@@ -1231,7 +1233,7 @@ def parse_function_def(node: ast.FunctionDef, scope: Scope, contr: Contraption, 
     x += 1
     contr.add_block((x, z), CommandBlock(
         'summon ArmorStand ~{0} ~1 ~{1} {{NoGravity:1b,Tags:["function_noname","py2cb"]}}'
-            .format(-x - 1, num_branches - 1)
+            .format(-x, num_branches - 1)
     ))
     x += 1
     contr.add_block((x, z), CommandBlock(

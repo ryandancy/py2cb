@@ -1185,7 +1185,7 @@ def parse_function_call(node: ast.Call, scope: Scope, contr: Contraption, x: int
         args_dict = get_arg_dict(node, func_scope.node)
         for arg, value in args_dict.items():
             arg = func_scope.transform(arg)
-            value, contr, x, z = setup_internal_values(value, func_scope, contr, x, z)
+            value, contr, x, z = setup_internal_values(value, scope, contr, x, z)
             
             x += 1
             contr.add_block((x, z), CommandBlock(

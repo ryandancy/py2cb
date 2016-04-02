@@ -454,18 +454,36 @@ def parse_assignment(node: ast.Assign, scope: Scope, contr: Contraption, x: int,
     for target in node.targets:
         # Assignment with names (n = _)
         if isinstance(target, ast.Name):
-            # Minecraft prevents player names >40 characters long, we reserve the last char
-            if len(target.id) > 39:
-                raise Exception('Max name length is 39 chars (Minecraft caps at 40, Py2CB reserves last).')
+            # Minecraft prevents player names >40 characters long, we reserve the last 2 chars
+            if len(target.id) > 38:
+                raise Exception('Max name length is 38 chars (Minecraft caps at 40, Py2CB reserves last 2).')
             
             target.id = scope.transform(target.id)
             
             # Simple assignment - name = num (ex: n = 4)
             if isinstance(node.value, ast.Num):
-                x += 1
-                contr.add_block((x, z), CommandBlock(
-                    'scoreboard players set {0} py2cb_var {1}'.format(target.id, node.value.n)
-                ))
+                if node.value.n % 1 == 0:
+                    # ints
+                    x += 1
+                    contr.add_block((x, z), CommandBlock(
+                        'scoreboard players set {0} py2cb_var {1}'.format(target.id, node.value.n)
+                    ))
+                else:
+                    # floats
+                    left = int(node.value.n)
+                    right = node.value.n - left
+                    
+                    leftname = target.id[:-2] + 'l' + target.id[-1]
+                    rightname = target.id[:-2] + 'r' + target.id[-1]
+                    
+                    x += 1
+                    contr.add_block((x, z), CommandBlock(
+                        'scoreboard players set {0} py2cb_var {1}'.format(leftname, left)
+                    ))
+                    x += 1
+                    contr.add_block((x, z), CommandBlock(
+                        'scoreboard players set {0} py2cb_var {1}'.format(rightname, right)
+                    ))
             
             # Simple assignment - name = str (ex: n = 'foo')
             elif isinstance(node.value, ast.Str):

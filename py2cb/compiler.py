@@ -462,7 +462,7 @@ def parse_assignment(node: ast.Assign, scope: Scope, contr: Contraption, x: int,
             
             # Simple assignment - name = num (ex: n = 4)
             if isinstance(node.value, ast.Num):
-                if node.value.n % 1 == 0:
+                if type(node.value.n) == int:
                     # ints
                     x += 1
                     contr.add_block((x, z), CommandBlock(

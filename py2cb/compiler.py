@@ -168,6 +168,7 @@ stringids = IDContainer(has_limit=True)
 exprids = IDContainer()
 listids = IDContainer(has_limit=True)
 scopeids = IDContainer()  # limit is implemented in Scope.__init__
+floatids = IDContainer()
 
 
 class Scope:
@@ -470,6 +471,8 @@ def parse_assignment(node: ast.Assign, scope: Scope, contr: Contraption, x: int,
                     ))
                 else:
                     # floats
+                    floatids.add(target.id)
+                    
                     left = int(node.value.n)
                     right = node.value.n - left
                     

@@ -648,18 +648,24 @@ def parse_binop(node: ast.BinOp, scope: Scope, contr: Contraption, x: int, z: in
         side, contr, x, z = setup_internal_values(side, scope, contr, x, z)
     
     # <= is issubset operator on sets
-    if set(map(type, [node.left, node.right])) <= {ast.Num, ast.Name}:
-        x += 1
-        exprids.add(node)
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players operation expr_{0} py2cb_intrnl = {1}'
-                .format(exprids[node], get_player_and_obj(node.left, scope))
-        ))
-        x += 1
-        contr.add_block((x, z), CommandBlock(
-            'scoreboard players operation expr_{0} py2cb_intrnl {2}= {1}'
-                .format(exprids[node], get_player_and_obj(node.right, scope), get_op_char(node.op))
-        ))
+    floatids_contains = map(floatids.__contains__, [node.left, node.right])
+    if set(map(type, [node.left, node.right])) <= {ast.Num, ast.Name} and len(set(floatids_contains)) == 1:
+        if any(floatids_contains):
+            # floats
+            pass
+        else:
+            # ints
+            x += 1
+            exprids.add(node)
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players operation expr_{0} py2cb_intrnl = {1}'
+                    .format(exprids[node], get_player_and_obj(node.left, scope))
+            ))
+            x += 1
+            contr.add_block((x, z), CommandBlock(
+                'scoreboard players operation expr_{0} py2cb_intrnl {2}= {1}'
+                    .format(exprids[node], get_player_and_obj(node.right, scope), get_op_char(node.op))
+            ))
     
     return contr, x, z
 

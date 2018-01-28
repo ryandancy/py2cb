@@ -73,3 +73,5 @@ generates a command-block chain which outputs sequential Roman numerals.
 ## Dependencies
 
 Depends on [`pynbt`](https://github.com/TkTech/PyNBT).
+
+Note: in the commit history, Copper is me from 2016.

@@ -19,4 +19,4 @@ example script to be compiled into a schematic at `roman-schem.schematic`.
 Examples are found in `examples/`. For example, the `roman_numerals.py` script
 generates a command-block chain which outputs sequential Roman numerals.
 
-Depends on (`pynbt`)[https://github.com/TkTech/PyNBT].
+Depends on [`pynbt`](https://github.com/TkTech/PyNBT).
